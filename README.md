@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# sora-type
 
-## Getting Started
+A browser-based font inspector — drag and drop OpenType or TrueType files to explore what's inside. Supports OTF, TTF, WOFF, and WOFF2. Everything runs client-side; no server required.
 
-First, run the development server:
+## UI
+
+The interface uses **primitives from [Sora UI](https://ui.soralabs.io.vn/)** (via the `@soralabs` shadcn registry), styled with Tailwind CSS.
+
+## Planned features
+
+- Font metadata: name, style, version, copyright (when available)
+- Display all glyphs and per-glyph details
+- Detect and show OpenType features
+- Detect and show ligatures
+- Detect supported languages
+- Show font table data
+- Font preview with sample text and waterfall lines
+- Live type tester
+- Variable font support
+
+Planned subpages: compare two fonts, language report, Vertical Metrics Report, Advance Width Report, glyph search.
+
+## Tech stack
+
+| Purpose | Library / tool |
+|---------|----------------|
+| Framework | [Next.js](https://nextjs.org), [React](https://react.dev) |
+| UI primitives | [Sora UI](https://ui.soralabs.io.vn/) |
+| Styling | [Tailwind CSS](https://tailwindcss.com) |
+| Font parsing | [opentype.js](https://github.com/opentypejs/opentype.js) |
+| Variable fonts | [variableFonts.js](https://github.com/Monotype/variableFonts.js) |
+| Lint / format | [Ultracite](https://github.com/haydenbleasel/ultracite) (Biome) |
+| Git hooks | [Lefthook](https://github.com/evilmartians/lefthook) |
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Description |
+|---------|-------------|
+| `bun dev` | Start dev server |
+| `bun run build` | Production build |
+| `bun run start` | Run production build |
+| `bun run check` | Lint and format check |
+| `bun run fix` | Auto-fix lint and format |
