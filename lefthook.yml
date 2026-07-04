@@ -10,3 +10,7 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
+
+pre-push:
+  jobs:
+    - run: bun run build:verify
