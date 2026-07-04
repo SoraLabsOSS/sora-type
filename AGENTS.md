@@ -33,3 +33,30 @@ MORE CLI:
   swizzle <Name>     eject component source for deep customization
   upgrade --apply    run after any @astryxdesign/core bump
 <!-- ASTRYX:END -->
+
+<!-- SORA-TYPE:START -->
+# Sora Type
+
+Browser-based font inspector — drop OTF/TTF/WOFF/WOFF2, analyze locally. Font logic lives in `src/lib/`; language data in `src/data/languages.json` (build via `bun run build:languages`). Everything runs client-side; no backend.
+
+## UI stack
+
+**Astryx is the primary design system.** Use `@astryxdesign/core` for layout, typography, forms, tables, navigation, theme, and all inspector shell UI.
+
+**Sora UI is animation-only.** Add primitives from the `@soralabs` shadcn registry (`components/sora-ui/`) only when motion is part of the UX — bottom sheets, text effects, drop-zone feedback, panel transitions. Do not use Sora UI for static UI that Astryx already covers (Button, Card, Table, Input, etc.).
+
+| Need | Use |
+|------|-----|
+| Shell, data UI, forms, tables | Astryx |
+| Simple fade/slide | CSS transition or `motion` directly |
+| Bespoke motion (sheet drag, text morph, reveal) | Sora UI primitive in `components/sora-ui/` |
+| Font parsing / language detection | `src/lib/*` — no UI library |
+
+Keep `components/sora-ui/` thin (effects/sheets only). Sora UI tokens bridge to Matcha via `src/themes/matcha/registry-bridge.css` when a Sora UI component is added.
+
+## Product context (for scope decisions)
+
+- Launch 1: Sora Type web inspector (font-first; not a Sora UI showcase).
+- Launch 2 (later): browser extension — identify fonts on the web; may reuse the same animation primitives.
+- Prefer minimal diffs; do not expand scope into unrelated features or docs unless asked.
+<!-- SORA-TYPE:END -->

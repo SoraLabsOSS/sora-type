@@ -5,7 +5,20 @@
     "ultracite/biome/react",
     "ultracite/biome/next"
   ],
+  "files": {
+    "includes": ["!!src/data"]
+  },
   "overrides": [
+    {
+      "includes": ["src/lib/engine/**"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noBarrelFile": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["src/themes/matcha/**"],
       "linter": {
