@@ -1,0 +1,109 @@
+"use client";
+
+import { Theme } from "@astryxdesign/core";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  isThemeMode,
+  type ResolvedTheme,
+  THEME_STORAGE_KEY,
+  type ThemeMode,
+} from "@/lib/theme/constants";
+import { matchaTheme } from "@/themes/matcha/matcha";
+
+interface ThemeModeContextValue {
+  mode: ThemeMode;
+  resolvedTheme: ResolvedTheme;
+  setMode: (mode: ThemeMode) => void;
+}
+
+const ThemeModeContext = createContext<ThemeModeContextValue | null>(null);
+
+function subscribeSystemTheme(onStoreChange: () => void): () => void {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", onStoreChange);
+  return () => {
+    media.removeEventListener("change", onStoreChange);
+  };
+}
+
+function getSystemThemeSnapshot(): ResolvedTheme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function getSystemThemeServerSnapshot(): ResolvedTheme {
+  return "light";
+}
+
+function readStoredMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (isThemeMode(stored)) {
+      return stored;
+    }
+  } catch {
+    // Private browsing or disabled storage.
+  }
+  return "system";
+}
+
+export function MatchaThemeProvider({ children }: { children: ReactNode }) {
+  const [mode, setModeState] = useState<ThemeMode>("system");
+  const [ready, setReady] = useState(false);
+  const systemTheme = useSyncExternalStore(
+    subscribeSystemTheme,
+    getSystemThemeSnapshot,
+    getSystemThemeServerSnapshot
+  );
+
+  useEffect(() => {
+    setModeState(readStoredMode());
+    setReady(true);
+  }, []);
+
+  const resolvedTheme: ResolvedTheme = mode === "system" ? systemTheme : mode;
+
+  const setMode = useCallback((next: ThemeMode) => {
+    setModeState(next);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Ignore storage failures.
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      mode,
+      resolvedTheme,
+      setMode,
+    }),
+    [mode, resolvedTheme, setMode]
+  );
+
+  return (
+    <ThemeModeContext.Provider value={value}>
+      <Theme mode={ready ? mode : "system"} theme={matchaTheme}>
+        {children}
+      </Theme>
+    </ThemeModeContext.Provider>
+  );
+}
+
+export function useThemeMode(): ThemeModeContextValue {
+  const context = useContext(ThemeModeContext);
+  if (!context) {
+    throw new Error("useThemeMode must be used within MatchaThemeProvider");
+  }
+  return context;
+}

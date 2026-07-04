@@ -4,5 +4,38 @@
     "ultracite/biome/core",
     "ultracite/biome/react",
     "ultracite/biome/next"
+  ],
+  "overrides": [
+    {
+      "includes": ["src/themes/matcha/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExportedImports": "off",
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/test/page.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useImageSize": "off"
+          },
+          "performance": {
+            "noImgElement": "off"
+          },
+          "style": {
+            "useConsistentTypeDefinitions": "off",
+            "useTemplate": "off"
+          },
+          "suspicious": {
+            "noEmptyBlockStatements": "off"
+          }
+        }
+      }
+    }
   ]
 }
