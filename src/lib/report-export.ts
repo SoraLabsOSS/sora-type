@@ -70,6 +70,7 @@ const PDF = {
 
 const MARGIN = 50;
 const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
 const FLOW_LEFT = {
@@ -119,6 +120,12 @@ function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
 
 function drawPageFooter(doc: PDFKit.PDFDocument, fileName: string): void {
   const footerY = PDF.pageBottom + 24;
+  // The footer lives inside the bottom margin reserved for it. PDFKit
+  // measures overflow against `page.height - margins.bottom`, so writing
+  // there would otherwise look like an overflow and spawn a blank page —
+  // lift the limit just for this draw, then put it back.
+  const originalBottomMargin = doc.page.margins.bottom;
+  doc.page.margins.bottom = 0;
   doc
     .font("Helvetica")
     .fontSize(7.5)
@@ -133,6 +140,7 @@ function drawPageFooter(doc: PDFKit.PDFDocument, fileName: string): void {
       lineBreak: false,
       width: CONTENT_WIDTH,
     });
+  doc.page.margins.bottom = originalBottomMargin;
 }
 
 function drawReportHeader(doc: PDFKit.PDFDocument, report: FontReport): void {
@@ -173,60 +181,78 @@ function drawStatCards(
   doc: PDFKit.PDFDocument,
   summary: LanguageSupportSummary
 ): void {
-  ensureSpace(doc, 72);
-  const gap = 10;
-  const cardWidth = (CONTENT_WIDTH - gap * 3) / 4;
-  const cardHeight = 54;
+  ensureSpace(doc, 64);
   const startY = doc.y;
+  const numberY = startY;
+  const labelY = startY + 25;
+  const ruleHeight = 38;
 
   const stats = [
-    { color: PDF.accent, label: "Full support", value: summary.full },
-    { color: "#2563eb", label: "Decomposed", value: summary.decomposed },
+    { emphasize: true, label: "Full support", value: summary.full },
+    { emphasize: false, label: "Decomposed", value: summary.decomposed },
     {
-      color: PDF.warning,
+      emphasize: false,
       label: "Positioning failed",
       value: summary.positioningFailed,
     },
-    { color: PDF.muted, label: "Unsupported", value: summary.none },
+    { emphasize: false, label: "Unsupported", value: summary.none },
   ];
 
-  let x = MARGIN;
-  for (const stat of stats) {
-    doc
-      .roundedRect(x, startY, cardWidth, cardHeight, 6)
-      .fillAndStroke(PDF.surface, PDF.border);
+  const colWidth = CONTENT_WIDTH / stats.length;
+
+  stats.forEach((stat, index) => {
+    const colX = MARGIN + index * colWidth;
+    const textX = colX + (index === 0 ? 0 : 14);
+    const textWidth = colWidth - (index === 0 ? 4 : 18);
+
+    if (index > 0) {
+      doc
+        .strokeColor(PDF.border)
+        .lineWidth(0.75)
+        .moveTo(colX, startY)
+        .lineTo(colX, startY + ruleHeight)
+        .stroke();
+    }
 
     doc
       .font("Helvetica-Bold")
-      .fontSize(18)
-      .fillColor(stat.color)
-      .text(String(stat.value), x + 12, startY + 10, {
+      .fontSize(19)
+      .fillColor(stat.emphasize ? PDF.accent : PDF.ink)
+      .text(String(stat.value), textX, numberY, {
         lineBreak: false,
-        width: cardWidth - 24,
+        width: textWidth,
       });
 
     doc
       .font("Helvetica")
-      .fontSize(7.5)
+      .fontSize(7)
       .fillColor(PDF.muted)
-      .text(stat.label, x + 12, startY + 34, {
-        width: cardWidth - 24,
+      .text(stat.label.toUpperCase(), textX, labelY, {
+        characterSpacing: 0.3,
+        width: textWidth,
       });
+  });
 
-    x += cardWidth + gap;
-  }
-
-  doc.y = startY + cardHeight + 14;
+  doc.y = startY + ruleHeight + 12;
   syncTextCursor(doc);
   doc
     .font("Helvetica")
-    .fontSize(8.5)
+    .fontSize(8)
     .fillColor(PDF.muted)
     .text(`${summary.total.toLocaleString()} languages checked`, {
       align: "right",
       width: CONTENT_WIDTH,
     });
   syncTextCursor(doc);
+  doc.moveDown(0.35);
+
+  const ruleY = doc.y;
+  doc
+    .strokeColor(PDF.border)
+    .lineWidth(0.75)
+    .moveTo(MARGIN, ruleY)
+    .lineTo(PAGE_WIDTH - MARGIN, ruleY)
+    .stroke();
   doc.moveDown(0.5);
 }
 
@@ -258,6 +284,10 @@ function drawDetailRow(
 ): void {
   const labelWidth = 132;
   const valueWidth = CONTENT_WIDTH - labelWidth - 8;
+  // heightOfString measures using the doc's currently active font/size, so
+  // it must be set to the size we're about to render with before measuring
+  // — otherwise a leftover heading size overstates the row's height.
+  doc.font("Helvetica").fontSize(8.5);
   const valueHeight = doc.heightOfString(value, {
     width: valueWidth,
   });
@@ -305,11 +335,20 @@ function drawWrappedParagraph(
   options?: { color?: string; fontSize?: number; gap?: number }
 ): void {
   const fontSize = options?.fontSize ?? 8.5;
+  // Set the font before measuring — heightOfString uses whatever font/size
+  // is currently active on the doc, which may still be a heading's.
+  doc.font("Helvetica").fontSize(fontSize);
   const height = doc.heightOfString(text, {
     width: CONTENT_WIDTH,
   });
 
-  ensureSpace(doc, height + (options?.gap ?? 8));
+  // A block taller than a full page will always need to spill onto more
+  // pages — reserving its whole height up front just strands the rest of
+  // the current page blank. Only guard against starting right at the edge.
+  const pageCapacity = PDF.pageBottom - MARGIN;
+  const needed =
+    height > pageCapacity ? Math.min(height, 30) : height + (options?.gap ?? 8);
+  ensureSpace(doc, needed);
   syncTextCursor(doc);
   doc
     .font("Helvetica")
@@ -488,7 +527,13 @@ function drawMetricsGrid(
 export function exportReportAsPdf(report: FontReport): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
-      margin: MARGIN,
+      bufferPages: true,
+      margins: {
+        top: MARGIN,
+        bottom: PAGE_HEIGHT - PDF.pageBottom,
+        left: MARGIN,
+        right: MARGIN,
+      },
       info: {
         Author: "Sora Type",
         Subject: "Font language support report",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Playwrite_US_Trad } from "next/font/google";
+import { DeferredAnalytics } from "@/components/analytics-deferred";
 import { AppLinkProvider } from "@/components/app-link-provider";
 import { AppShellLayout } from "@/components/app-shell-layout";
 import { MatchaThemeProvider } from "@/components/theme/theme-provider";
@@ -85,6 +86,7 @@ export default function RootLayout({
             <AppShellLayout>{children}</AppShellLayout>
           </MatchaThemeProvider>
         </AppLinkProvider>
+        <DeferredAnalytics />
       </body>
     </html>
   );
