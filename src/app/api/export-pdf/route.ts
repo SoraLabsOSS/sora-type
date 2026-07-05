@@ -53,7 +53,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const report = buildFontReport(font, arrayBuffer, file.name, mode);
+  const report = buildFontReport(font, arrayBuffer, file.name, mode, file.size);
   const pdfBytes = await exportReportAsPdf(report);
   const pdfArrayBuffer = pdfBytes.buffer.slice(
     pdfBytes.byteOffset,

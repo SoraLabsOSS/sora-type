@@ -81,7 +81,7 @@ export function runCli(argv: string[]): number {
   if (values.json) {
     console.log(exportReportAsJson(report));
   } else {
-    console.log(`${report.font.fullName} (${report.font.fileName})`);
+    console.log(`${report.metadata.fullName} (${report.metadata.fileName})`);
     console.log(
       `Full: ${report.summary.full}  Decomposed: ${report.summary.decomposed}  ` +
         `Positioning failed: ${report.summary.positioningFailed}  None: ${report.summary.none}`

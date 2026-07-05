@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Playwrite_US_Trad } from "next/font/google";
 import { AppLinkProvider } from "@/components/app-link-provider";
-import { AppNavbar } from "@/components/app-navbar";
+import { AppShellLayout } from "@/components/app-shell-layout";
 import { MatchaThemeProvider } from "@/components/theme/theme-provider";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme/theme-init-script";
@@ -79,11 +79,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="flex h-dvh flex-col overflow-hidden">
         <AppLinkProvider>
           <MatchaThemeProvider>
-            <AppNavbar />
-            {children}
+            <AppShellLayout>{children}</AppShellLayout>
           </MatchaThemeProvider>
         </AppLinkProvider>
       </body>

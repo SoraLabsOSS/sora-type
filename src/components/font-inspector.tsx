@@ -1,38 +1,43 @@
 "use client";
 
-import { Badge } from "@astryxdesign/core/Badge";
-import { Button } from "@astryxdesign/core/Button";
-import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { Divider } from "@astryxdesign/core/Divider";
-import { FileInput } from "@astryxdesign/core/FileInput";
-import { HStack, VStack } from "@astryxdesign/core/Layout";
-import { List, ListItem } from "@astryxdesign/core/List";
+import { Card } from "@astryxdesign/core/Card";
+import { VStack } from "@astryxdesign/core/Layout";
 import { Section } from "@astryxdesign/core/Section";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
 import { useCallback, useEffect, useState } from "react";
-import { FontInspectorDetails } from "@/components/font-inspector-details";
+import {
+  DEFAULT_FONT_SIZE,
+  FontInspectorPreview,
+} from "@/components/font-inspector-preview";
+import { GlyphsSectionSkeleton } from "@/components/font-inspector-shell";
+import { FontInspectorSidebar } from "@/components/font-inspector-sidebar";
+import { FontInspectorSummaryPanel } from "@/components/font-inspector-summary-panel";
 import {
   INSPECTOR_FONT_ACCEPT,
-  INSPECTOR_FONT_DESCRIPTION,
-  INSPECTOR_FONT_LABEL,
-} from "@/components/font-inspector-file-input";
-import {
-  FontDetailsSkeleton,
-  FontMetadataSkeleton,
-  GlyphGridSkeleton,
-  GlyphsHeadingSkeleton,
-  LanguageSummarySkeleton,
-  LanguagesDetectedSkeleton,
-} from "@/components/font-inspector-shell";
+  InspectorFontUpload,
+} from "@/components/font-inspector-upload";
 import GlyphGrid from "@/components/glyph-grid";
 import { SkeletonTransition } from "@/components/ui/skeleton";
+import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import { reportAllLanguages } from "@/lib/font-language-detection";
 import { extractFontMetadata, type FontMetadata } from "@/lib/font-metadata";
 import { summarizeSupport } from "@/lib/font-report";
 
 const FILE_EXTENSION = /\.[^./]+$/;
+const INSPECTOR_FONT_SLOT = "inspector";
+const GLYPH_CELL_MIN_WIDTH = 64;
+const COLUMN_SCROLL_CLASS =
+  "scrollbar-hidden min-h-0 lg:h-full lg:overflow-y-auto lg:overscroll-y-contain";
+
+const INSPECTOR_SECTION_CLASS = [
+  "flex min-h-0 flex-1 flex-col h-full max-lg:flex-none max-lg:overflow-visible lg:overflow-hidden",
+  "[&>div]:flex [&>div]:h-full [&>div]:min-h-0 [&>div]:flex-1 [&>div]:flex-col",
+].join(" ");
+
+const INSPECTOR_GRID_CLASS =
+  "grid grid-cols-1 gap-4 max-lg:min-h-min max-lg:flex-none lg:min-h-0 lg:flex-1 lg:h-full lg:grid-cols-[280px_minmax(0,1fr)_minmax(240px,280px)] lg:overflow-hidden";
 
 /**
  * Some language codes have multiple orthographies sharing one script (e.g.
@@ -55,6 +60,7 @@ function withRowKeys(
 interface LoadedFont {
   familyName: string;
   fileName: string;
+  fileSizeBytes: number;
   fullName: string;
   numGlyphs: number;
   style: string;
@@ -68,199 +74,16 @@ function openFont(buffer: ArrayBuffer): FontkitFont {
 const PLACEHOLDER_FONT_URL = "/fonts/TS Crude.ttf";
 const PLACEHOLDER_FONT_NAME = "TS Crude.ttf";
 
-interface InspectorResultsProps {
-  detected: (LanguageSupportResult & { rowKey: string })[];
-  font: FontkitFont | null;
-  fontMetadata: FontMetadata | null;
-  isContentReady: boolean;
-  isExporting: boolean;
-  isPlaceholder: boolean;
-  loadedFont: LoadedFont | null;
-  onExportPdf: () => void;
-  positioningIssues: (LanguageSupportResult & { rowKey: string })[];
-  summary: ReturnType<typeof summarizeSupport> | null;
-}
-
-function InspectorResults({
-  detected,
-  font,
-  fontMetadata,
-  isContentReady,
-  isExporting,
-  isPlaceholder,
-  loadedFont,
-  onExportPdf,
-  positioningIssues,
-  summary,
-}: InspectorResultsProps) {
-  const isLoadingContent = !isContentReady;
-
-  return (
-    <VStack gap={6}>
-      <SkeletonTransition
-        loading={isLoadingContent}
-        skeleton={<FontMetadataSkeleton />}
-      >
-        {loadedFont ? (
-          <VStack gap={2}>
-            {isPlaceholder ? (
-              <Text color="secondary" type="supporting">
-                Showing an example font — upload your own to inspect it.
-              </Text>
-            ) : null}
-            <Heading className="font-sans" level={2}>
-              {loadedFont.fullName}
-            </Heading>
-            <Text color="secondary" type="supporting">
-              {loadedFont.familyName} · {loadedFont.style} ·{" "}
-              {loadedFont.numGlyphs} glyphs
-            </Text>
-            <HStack gap={2}>
-              <Button
-                isDisabled={isPlaceholder}
-                isLoading={isExporting}
-                label="Export PDF report"
-                onClick={onExportPdf}
-                variant="secondary"
-              />
-            </HStack>
-          </VStack>
-        ) : null}
-      </SkeletonTransition>
-
-      <SkeletonTransition
-        loading={isLoadingContent}
-        skeleton={<FontDetailsSkeleton />}
-      >
-        {fontMetadata ? <FontInspectorDetails metadata={fontMetadata} /> : null}
-      </SkeletonTransition>
-
-      <VStack gap={2}>
-        <Divider variant="subtle" />
-        <SkeletonTransition
-          loading={isLoadingContent}
-          skeleton={
-            <VStack gap={2}>
-              <GlyphsHeadingSkeleton />
-              <Text color="secondary" type="supporting">
-                Showing the first 500 glyphs. Hover a cell for its Unicode code
-                point.
-              </Text>
-              <GlyphGridSkeleton />
-            </VStack>
-          }
-        >
-          {loadedFont && font ? (
-            <VStack gap={2}>
-              <Heading className="font-sans" level={3}>
-                Glyphs ({loadedFont.numGlyphs})
-              </Heading>
-              <Text color="secondary" type="supporting">
-                Showing the first 500 glyphs. Hover a cell for its Unicode code
-                point.
-              </Text>
-              <GlyphGrid font={font} />
-            </VStack>
-          ) : null}
-        </SkeletonTransition>
-      </VStack>
-
-      <SkeletonTransition
-        loading={isLoadingContent}
-        skeleton={<LanguageSummarySkeleton />}
-      >
-        {summary ? (
-          <HStack gap={4}>
-            <Text type="body">
-              <b>{summary.full}</b> full
-            </Text>
-            <Text type="body">
-              <b>{summary.decomposed}</b> decomposed
-            </Text>
-            <Text type="body">
-              <b>{summary.positioningFailed}</b> positioning failed
-            </Text>
-            <Text type="body">
-              <b>{summary.none}</b> unsupported
-            </Text>
-          </HStack>
-        ) : null}
-      </SkeletonTransition>
-
-      {isContentReady && positioningIssues.length > 0 ? (
-        <VStack gap={2}>
-          <Heading className="font-sans" level={3}>
-            Positioning issues found ({positioningIssues.length})
-          </Heading>
-          <Text color="secondary" type="supporting">
-            These languages have every required glyph, but this font's GPOS
-            table doesn't correctly position the combining marks — a cmap-only
-            checker would incorrectly report them as supported.
-          </Text>
-          <List hasDividers header="Positioning issues">
-            {positioningIssues.map((lang) => (
-              <ListItem
-                description={`${lang.script} · ${lang.unpositioned.join(", ")}`}
-                endContent={
-                  <Badge label="positioning failed" variant="warning" />
-                }
-                key={lang.rowKey}
-                label={lang.name}
-              />
-            ))}
-          </List>
-        </VStack>
-      ) : null}
-
-      <VStack gap={2}>
-        <Divider variant="subtle" />
-        <SkeletonTransition
-          loading={isLoadingContent}
-          skeleton={<LanguagesDetectedSkeleton />}
-        >
-          <Collapsible
-            defaultIsOpen={false}
-            trigger={
-              <Text type="body">
-                Support for{" "}
-                <Text as="span" weight="bold">
-                  {detected.length}
-                </Text>{" "}
-                languages detected
-              </Text>
-            }
-          >
-            {detected.length > 0 ? (
-              <VStack gap={2}>
-                <Text color="secondary" type="supporting">
-                  {detected.map((lang, i) => (
-                    <span key={lang.rowKey}>
-                      {lang.name} ({lang.script}
-                      {lang.support === "decomposed" ? "*" : ""})
-                      {i < detected.length - 1 ? ", " : "."}
-                    </span>
-                  ))}
-                </Text>
-                {detected.some((lang) => lang.support === "decomposed") ? (
-                  <Text color="secondary" type="supporting">
-                    * supported via combining marks, not a precomposed glyph
-                  </Text>
-                ) : null}
-              </VStack>
-            ) : null}
-          </Collapsible>
-        </SkeletonTransition>
-      </VStack>
-    </VStack>
-  );
-}
-
 export default function FontInspector() {
   const [file, setFile] = useState<File | null>(null);
   const [loadedFont, setLoadedFont] = useState<LoadedFont | null>(null);
   const [font, setFont] = useState<FontkitFont | null>(null);
+  const [fontBuffer, setFontBuffer] = useState<ArrayBuffer | null>(null);
   const [fontMetadata, setFontMetadata] = useState<FontMetadata | null>(null);
+  const [cssFontFamily, setCssFontFamily] = useState<string | null>(null);
   const [languages, setLanguages] = useState<LanguageSupportResult[]>([]);
+  const [previewFontSize, setPreviewFontSize] = useState(DEFAULT_FONT_SIZE);
+  const [previewText, setPreviewText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
@@ -276,12 +99,14 @@ export default function FontInspector() {
       const openedFont = openFont(buffer);
       setLoadedFont({
         fileName,
+        fileSizeBytes: buffer.byteLength,
         fullName: openedFont.fullName,
         familyName: openedFont.familyName,
         style: openedFont.subfamilyName,
         numGlyphs: openedFont.numGlyphs,
       });
       setFont(openedFont);
+      setFontBuffer(buffer);
       setFontMetadata(extractFontMetadata(openedFont, fileName));
       setLanguages(reportAllLanguages(openedFont, buffer));
     },
@@ -298,8 +123,10 @@ export default function FontInspector() {
     } catch {
       setLoadedFont(null);
       setFont(null);
+      setFontBuffer(null);
       setFontMetadata(null);
       setLanguages([]);
+      setCssFontFamily(null);
       setIsPlaceholder(false);
     } finally {
       setIsBootstrapping(false);
@@ -310,6 +137,34 @@ export default function FontInspector() {
     loadPlaceholder();
   }, [loadPlaceholder]);
 
+  useEffect(() => {
+    if (!(fontBuffer && loadedFont)) {
+      setCssFontFamily(null);
+      return;
+    }
+
+    let cancelled = false;
+    const family = toCssFontFamily(INSPECTOR_FONT_SLOT, loadedFont.fileName);
+
+    loadFontFace(INSPECTOR_FONT_SLOT, family, fontBuffer)
+      .then(() => {
+        if (!cancelled) {
+          setCssFontFamily(family);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCssFontFamily(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fontBuffer, loadedFont]);
+
+  useEffect(() => () => clearFontFace(INSPECTOR_FONT_SLOT), []);
+
   const handleFile = useCallback(
     async (selected: File | File[] | null) => {
       const next = Array.isArray(selected) ? selected[0] : selected;
@@ -319,8 +174,10 @@ export default function FontInspector() {
       if (!next) {
         setLoadedFont(null);
         setFont(null);
+        setFontBuffer(null);
         setFontMetadata(null);
         setLanguages([]);
+        setCssFontFamily(null);
         setIsPlaceholder(false);
         await loadPlaceholder();
         return;
@@ -334,8 +191,10 @@ export default function FontInspector() {
       } catch (err) {
         setLoadedFont(null);
         setFont(null);
+        setFontBuffer(null);
         setFontMetadata(null);
         setLanguages([]);
+        setCssFontFamily(null);
         setError(err instanceof Error ? err.message : "Could not parse font");
       } finally {
         setIsLoading(false);
@@ -376,49 +235,87 @@ export default function FontInspector() {
   const summary = languages.length > 0 ? summarizeSupport(languages) : null;
   const keyedLanguages = withRowKeys(languages);
   const detected = keyedLanguages.filter(
-    (l) => l.support === "full" || l.support === "decomposed"
+    (language) =>
+      language.support === "full" || language.support === "decomposed"
   );
   const positioningIssues = keyedLanguages.filter(
-    (l) => l.support === "positioning-failed"
+    (language) => language.support === "positioning-failed"
   );
 
   return (
-    <Section padding={6}>
-      <VStack
-        gap={6}
-        style={{ maxWidth: 720, marginInline: "auto", width: "100%" }}
-      >
-        <VStack gap={1}>
-          <Text color="secondary" type="body">
-            Drag and drop a font file to see what's inside — including
-            shaping-verified language support, not just glyph presence.
-          </Text>
-        </VStack>
+    <Section className={INSPECTOR_SECTION_CLASS} padding={4}>
+      <div className={INSPECTOR_GRID_CLASS}>
+        <aside className={`flex flex-col ${COLUMN_SCROLL_CLASS}`}>
+          <FontInspectorSidebar
+            detected={detected}
+            fontMetadata={fontMetadata}
+            isContentReady={isContentReady}
+            isExporting={isExporting}
+            isPlaceholder={isPlaceholder}
+            loadedFont={loadedFont}
+            onExportPdf={handleExportPdf}
+          />
+        </aside>
 
-        <FileInput
-          accept={INSPECTOR_FONT_ACCEPT}
-          description={INSPECTOR_FONT_DESCRIPTION}
-          isLoading={isLoading}
-          label={INSPECTOR_FONT_LABEL}
-          mode="dropzone"
-          onChange={handleFile}
-          status={error ? { type: "error", message: error } : undefined}
-          value={file}
-        />
+        <div className={`flex flex-col gap-4 ${COLUMN_SCROLL_CLASS}`}>
+          <InspectorFontUpload
+            accept={INSPECTOR_FONT_ACCEPT}
+            isLoading={isLoading}
+            onChange={handleFile}
+            status={error ? { type: "error", message: error } : undefined}
+            value={file}
+          />
 
-        <InspectorResults
-          detected={detected}
-          font={font}
-          fontMetadata={fontMetadata}
-          isContentReady={isContentReady}
-          isExporting={isExporting}
-          isPlaceholder={isPlaceholder}
-          loadedFont={loadedFont}
-          onExportPdf={handleExportPdf}
-          positioningIssues={positioningIssues}
-          summary={summary}
-        />
-      </VStack>
+          <div>
+            <FontInspectorPreview
+              cssFontFamily={cssFontFamily}
+              fontSize={previewFontSize}
+              isContentReady={isContentReady}
+              onFontSizeChange={setPreviewFontSize}
+              onPreviewTextChange={setPreviewText}
+              previewText={previewText}
+              weightLabel={fontMetadata?.weightLabel}
+            />
+          </div>
+
+          <Card className="min-w-0 bg-surface" padding={4}>
+            <VStack className="min-h-0" gap={3}>
+              <SkeletonTransition
+                loading={!isContentReady}
+                skeleton={
+                  <GlyphsSectionSkeleton cellMinWidth={GLYPH_CELL_MIN_WIDTH} />
+                }
+              >
+                {loadedFont && font ? (
+                  <VStack gap={2}>
+                    <Heading className="font-sans" level={3}>
+                      Glyphs ({loadedFont.numGlyphs.toLocaleString()})
+                    </Heading>
+                    <Text color="secondary" type="supporting">
+                      Showing the first 500 glyphs. Hover a cell for its Unicode
+                      code point.
+                    </Text>
+                    <GlyphGrid
+                      cellMinWidth={GLYPH_CELL_MIN_WIDTH}
+                      font={font}
+                    />
+                  </VStack>
+                ) : null}
+              </SkeletonTransition>
+            </VStack>
+          </Card>
+        </div>
+
+        <aside className={`flex flex-col ${COLUMN_SCROLL_CLASS}`}>
+          <FontInspectorSummaryPanel
+            detected={detected}
+            fontMetadata={fontMetadata}
+            isContentReady={isContentReady}
+            positioningIssues={positioningIssues}
+            summary={summary}
+          />
+        </aside>
+      </div>
     </Section>
   );
 }

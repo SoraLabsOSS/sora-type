@@ -5,6 +5,7 @@ import type { Font as FontkitFont } from "fontkit";
 import { useMemo } from "react";
 
 interface GlyphGridProps {
+  cellMinWidth?: number;
   font: FontkitFont;
 }
 
@@ -41,12 +42,16 @@ function toHex(codePoint: number): string {
   return codePoint.toString(16).padStart(4, "0");
 }
 
-export default function GlyphGrid({ font }: GlyphGridProps) {
+export default function GlyphGrid({
+  cellMinWidth = 100,
+  font,
+}: GlyphGridProps) {
   const cells = useMemo(() => buildGlyphCells(font), [font]);
   const { unitsPerEm, ascent } = font;
+  const cellPadding = cellMinWidth <= 72 ? "p-1.5" : "p-3";
 
   return (
-    <Grid columns={{ minWidth: 100, repeat: "fill" }} gap={0}>
+    <Grid columns={{ minWidth: cellMinWidth, repeat: "fill" }} gap={0}>
       {cells.map((cell) => (
         <div
           aria-label={`Glyph ${cell.char}, Unicode U+${toHex(cell.codePoint)}`}
@@ -56,7 +61,7 @@ export default function GlyphGrid({ font }: GlyphGridProps) {
         >
           <svg
             aria-hidden="true"
-            className="h-full w-full p-3 text-primary"
+            className={`h-full w-full ${cellPadding} text-primary`}
             viewBox={`0 0 ${unitsPerEm} ${unitsPerEm}`}
           >
             <g transform={`translate(0, ${ascent}) scale(1, -1)`}>

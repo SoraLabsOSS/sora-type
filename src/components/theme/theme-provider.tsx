@@ -2,6 +2,7 @@
 
 import { Theme } from "@astryxdesign/core";
 import {
+  type CSSProperties,
   createContext,
   type ReactNode,
   useCallback,
@@ -56,27 +57,60 @@ function readStoredMode(): ThemeMode {
   return "system";
 }
 
+function resolveTheme(
+  mode: ThemeMode,
+  systemTheme: ResolvedTheme
+): ResolvedTheme {
+  return mode === "system" ? systemTheme : mode;
+}
+
+/** Keeps `color-scheme` + `light-dark()` tokens aligned even if Theme SSR/hydration drifts. */
+function ThemeSurface({
+  children,
+  resolvedTheme,
+}: {
+  children: ReactNode;
+  resolvedTheme: ResolvedTheme;
+}) {
+  const surfaceStyle = useMemo(
+    () =>
+      ({
+        colorScheme: resolvedTheme,
+        display: "flex",
+        flex: 1,
+        minHeight: 0,
+        flexDirection: "column",
+      }) satisfies CSSProperties,
+    [resolvedTheme]
+  );
+
+  return <div style={surfaceStyle}>{children}</div>;
+}
+
 export function MatchaThemeProvider({ children }: { children: ReactNode }) {
+  // Keep the first render identical on server and client. Reading localStorage in
+  // useState would resolve to "dark" on the client while SSR stays "system" →
+  // hydration mismatch on Astryx Theme's data-theme. theme-init-script already
+  // sets <html data-theme> before paint; sync stored mode here before paint.
   const [mode, setModeState] = useState<ThemeMode>("system");
-  const [mounted, setMounted] = useState(false);
   const systemTheme = useSyncExternalStore(
     subscribeSystemTheme,
     getSystemThemeSnapshot,
     getSystemThemeServerSnapshot
   );
 
+  const resolvedTheme = resolveTheme(mode, systemTheme);
+
   useLayoutEffect(() => {
     setModeState(readStoredMode());
-    setMounted(true);
   }, []);
 
-  const resolvedTheme: ResolvedTheme = mode === "system" ? systemTheme : mode;
-
-  // Before storage is read, keep Astryx Theme aligned with the blocking script
-  // on <html> so hydration does not strip data-theme and flash the wrong mode.
-  const astryxMode: ResolvedTheme = mounted
-    ? resolvedTheme
-    : readDomResolvedTheme();
+  // Always pass an explicit light|dark mode to Astryx Theme (never "system") so
+  // useRootThemeSync keeps data-theme on <html> and Tailwind light-dark() tokens
+  // resolve consistently with the toggle state.
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute("data-theme", resolvedTheme);
+  }, [resolvedTheme]);
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
@@ -98,8 +132,8 @@ export function MatchaThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeModeContext.Provider value={value}>
-      <Theme mode={astryxMode} theme={matchaTheme}>
-        {children}
+      <Theme mode={resolvedTheme} theme={matchaTheme}>
+        <ThemeSurface resolvedTheme={resolvedTheme}>{children}</ThemeSurface>
       </Theme>
     </ThemeModeContext.Provider>
   );

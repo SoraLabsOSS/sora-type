@@ -131,22 +131,30 @@ export function summarizeEmbedding(
 }
 
 function getTableTags(font: FontkitFont): string[] {
-  const directory = font.directory as { tables?: Record<string, unknown> };
-  if (!directory.tables) {
+  const tables = (
+    font as FontkitFont & { directory?: { tables?: Record<string, unknown> } }
+  ).directory?.tables;
+  if (!tables) {
     return [];
   }
-  return Object.keys(directory.tables).toSorted();
+  return Object.keys(tables).toSorted();
 }
 
 function getVariationAxes(font: FontkitFont): FontVariationAxisSummary[] {
   return Object.entries(font.variationAxes ?? {})
-    .map(([tag, axis]) => ({
-      tag,
-      name: axis.name,
-      min: axis.min,
-      default: axis.default,
-      max: axis.max,
-    }))
+    .flatMap(([tag, axis]) =>
+      axis
+        ? [
+            {
+              tag,
+              name: axis.name,
+              min: axis.min,
+              default: axis.default,
+              max: axis.max,
+            },
+          ]
+        : []
+    )
     .toSorted((a, b) => a.tag.localeCompare(b.tag));
 }
 
@@ -212,6 +220,37 @@ export function extractFontMetadata(
 export interface FontDetailField {
   label: string;
   value: string;
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function buildFontSummaryFields(
+  metadata: FontMetadata,
+  scriptSummary?: string
+): FontDetailField[] {
+  const fields: Array<FontDetailField | null> = [
+    { label: "Font family", value: metadata.familyName },
+    metadata.designer ? { label: "Designer", value: metadata.designer } : null,
+    metadata.version ? { label: "Version", value: metadata.version } : null,
+    metadata.license ? { label: "License", value: metadata.license } : null,
+    scriptSummary ? { label: "Scripts", value: scriptSummary } : null,
+    metadata.variationAxes.length > 0
+      ? {
+          label: "Axes",
+          value: metadata.variationAxes.map((axis) => axis.tag).join(", "),
+        }
+      : null,
+  ];
+
+  return fields.filter((field): field is FontDetailField => field !== null);
 }
 
 export function buildFontDetailFields(

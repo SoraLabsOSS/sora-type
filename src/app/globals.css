@@ -110,10 +110,30 @@ html[data-theme="light"] {
     background-color: var(--color-background-body);
   }
 
+  /* Theme root is body's flex child — must fill the viewport so AppShell
+     height="fill" and per-column scroll regions get a bounded height. */
+  body > [data-astryx-theme] {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    min-height: 0;
+  }
+
   html:has([data-slot="dialog-overlay"][data-state="open"]),
   html:has([data-slot="alert-dialog-overlay"][data-state="open"]),
   html:has([data-slot="bottom-sheet-overlay"]) {
     overflow: hidden;
     scrollbar-gutter: auto;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
   }
 }
