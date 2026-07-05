@@ -6,7 +6,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -17,6 +17,7 @@ import {
   THEME_STORAGE_KEY,
   type ThemeMode,
 } from "@/lib/theme/constants";
+import { readDomResolvedTheme } from "@/lib/theme/theme-init-script";
 import { matchaTheme } from "@/themes/matcha/matcha";
 
 interface ThemeModeContextValue {
@@ -36,9 +37,7 @@ function subscribeSystemTheme(onStoreChange: () => void): () => void {
 }
 
 function getSystemThemeSnapshot(): ResolvedTheme {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return readDomResolvedTheme();
 }
 
 function getSystemThemeServerSnapshot(): ResolvedTheme {
@@ -59,19 +58,25 @@ function readStoredMode(): ThemeMode {
 
 export function MatchaThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>("system");
-  const [ready, setReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const systemTheme = useSyncExternalStore(
     subscribeSystemTheme,
     getSystemThemeSnapshot,
     getSystemThemeServerSnapshot
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setModeState(readStoredMode());
-    setReady(true);
+    setMounted(true);
   }, []);
 
   const resolvedTheme: ResolvedTheme = mode === "system" ? systemTheme : mode;
+
+  // Before storage is read, keep Astryx Theme aligned with the blocking script
+  // on <html> so hydration does not strip data-theme and flash the wrong mode.
+  const astryxMode: ResolvedTheme = mounted
+    ? resolvedTheme
+    : readDomResolvedTheme();
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
@@ -93,7 +98,7 @@ export function MatchaThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeModeContext.Provider value={value}>
-      <Theme mode={ready ? mode : "system"} theme={matchaTheme}>
+      <Theme mode={astryxMode} theme={matchaTheme}>
         {children}
       </Theme>
     </ThemeModeContext.Provider>

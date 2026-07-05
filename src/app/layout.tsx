@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Playwrite_US_Trad } from "next/font/google";
-import Script from "next/script";
+import { AppLinkProvider } from "@/components/app-link-provider";
+import { AppNavbar } from "@/components/app-navbar";
 import { MatchaThemeProvider } from "@/components/theme/theme-provider";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
-import { THEME_STORAGE_KEY } from "@/lib/theme/constants";
+import { themeInitScript } from "@/lib/theme/theme-init-script";
 import "./globals.css";
 import "@/themes/matcha/matcha.css";
 import "@/themes/matcha/registry-bridge.css";
@@ -60,8 +61,6 @@ export const metadata: Metadata = {
   },
 };
 
-const themeInitScript = `(function(){try{var m=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(m==="light"||m==="dark"){document.documentElement.setAttribute("data-theme",m);}}catch(e){}})();`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -75,12 +74,18 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {themeInitScript}
-        </Script>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: must run before first paint to prevent theme flash
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
       </head>
       <body className="flex min-h-full flex-col">
-        <MatchaThemeProvider>{children}</MatchaThemeProvider>
+        <AppLinkProvider>
+          <MatchaThemeProvider>
+            <AppNavbar />
+            {children}
+          </MatchaThemeProvider>
+        </AppLinkProvider>
       </body>
     </html>
   );

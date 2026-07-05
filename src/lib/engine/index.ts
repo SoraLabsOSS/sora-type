@@ -23,6 +23,18 @@ export {
   detectLanguages,
   reportAllLanguages,
 } from "@/lib/font-language-detection";
+export type {
+  FontDetailField,
+  FontEmbeddingPermissions,
+  FontMetadata,
+  FontMetricsSummary,
+  FontVariationAxisSummary,
+} from "@/lib/font-metadata";
+export {
+  buildFontDetailFields,
+  extractFontMetadata,
+  summarizeEmbedding,
+} from "@/lib/font-metadata";
 export type { LanguageSupportSummary } from "@/lib/font-report";
 export { summarizeSupport } from "@/lib/font-report";
 export type { FontReport } from "@/lib/report-export";

@@ -13,6 +13,20 @@
 @source "../app/**/*.{ts,tsx}";
 @source "../themes/**/*.{ts,tsx}";
 
+/* Unlayered on purpose: astryx's built theme CSS sets `:root { color-scheme:
+ * light dark }` inside the `astryx-theme` layer, which — because CSS layers
+ * beat specificity — overrides reset.css's `[data-theme="dark"]` rule (in
+ * the earlier `reset` layer) no matter what. Unlayered rules win over any
+ * layered rule regardless of layer order, so this is the one place that can
+ * force color-scheme to actually track our light/dark toggle. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
 @custom-variant dark {
   &:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *) {
     @slot;
@@ -24,6 +38,18 @@
 }
 
 @layer base {
+  @font-face {
+    font-family: "TS Crude";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/TS Crude.ttf") format("truetype");
+  }
+
+  .font-ts-crude {
+    font-family: "TS Crude", serif;
+  }
+
   html {
     scrollbar-gutter: stable;
   }
@@ -80,6 +106,8 @@
 
   body {
     overscroll-behavior: none;
+    color: var(--color-text-primary);
+    background-color: var(--color-background-body);
   }
 
   html:has([data-slot="dialog-overlay"][data-state="open"]),
