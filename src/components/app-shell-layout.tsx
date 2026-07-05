@@ -5,6 +5,7 @@ import { Section } from "@astryxdesign/core/Section";
 import { TopNav, TopNavHeading, TopNavItem } from "@astryxdesign/core/TopNav";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { AppInfoSheet } from "@/components/app-info-sheet";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
 function BrandWordmark() {
@@ -36,7 +37,12 @@ function AppTopNav() {
           />
         </>
       }
-      endContent={<ThemeSwitcher />}
+      endContent={
+        <>
+          <AppInfoSheet />
+          <ThemeSwitcher />
+        </>
+      }
       heading={
         <TopNavHeading
           headingHref="/"

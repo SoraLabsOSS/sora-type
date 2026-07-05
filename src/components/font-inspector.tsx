@@ -10,6 +10,7 @@ import {
   DEFAULT_FONT_SIZE,
   FontInspectorPreview,
 } from "@/components/font-inspector-preview";
+import { FontInspectorRawTables } from "@/components/font-inspector-raw-tables";
 import { FontInspectorSidebar } from "@/components/font-inspector-sidebar";
 import { FontInspectorSummaryPanel } from "@/components/font-inspector-summary-panel";
 import {
@@ -36,6 +37,8 @@ const INSPECTOR_SECTION_CLASS = [
 
 const INSPECTOR_GRID_CLASS =
   "grid grid-cols-1 gap-4 max-lg:min-h-min max-lg:flex-none lg:min-h-0 lg:flex-1 lg:h-full lg:grid-cols-[280px_minmax(0,1fr)_minmax(240px,280px)] lg:overflow-hidden";
+
+export type InspectorView = "overview" | "raw-tables";
 
 /**
  * Some language codes have multiple orthographies sharing one script (e.g.
@@ -86,6 +89,7 @@ export default function FontInspector() {
   const [isExporting, setIsExporting] = useState(false);
   const [isPlaceholder, setIsPlaceholder] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<InspectorView>("overview");
 
   const loadFontFromBuffer = useCallback(
     (fileName: string, buffer: ArrayBuffer) => {
@@ -236,55 +240,76 @@ export default function FontInspector() {
             isPlaceholder={isPlaceholder}
             loadedFont={loadedFont}
             onExportPdf={handleExportPdf}
+            onViewChange={setView}
+            view={view}
           />
         </aside>
 
-        <div className={`flex flex-col gap-4 ${COLUMN_SCROLL_CLASS}`}>
-          <InspectorFontUpload
-            accept={INSPECTOR_FONT_ACCEPT}
-            isLoading={isLoading}
-            onChange={handleFile}
-            status={error ? { type: "error", message: error } : undefined}
-            value={file}
-          />
-
-          <div>
-            <FontInspectorPreview
-              cssFontFamily={cssFontFamily}
-              fontSize={previewFontSize}
-              onFontSizeChange={setPreviewFontSize}
-              onPreviewTextChange={setPreviewText}
-              previewText={previewText}
-              weightLabel={fontMetadata?.weightLabel}
-            />
+        {view === "raw-tables" ? (
+          <div
+            className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
+          >
+            {font ? (
+              <FontInspectorRawTables font={font} />
+            ) : (
+              <Text color="secondary" type="supporting">
+                Load a font to inspect its raw tables.
+              </Text>
+            )}
           </div>
+        ) : (
+          <>
+            <div className={`flex flex-col gap-4 ${COLUMN_SCROLL_CLASS}`}>
+              <InspectorFontUpload
+                accept={INSPECTOR_FONT_ACCEPT}
+                isLoading={isLoading}
+                onChange={handleFile}
+                status={error ? { type: "error", message: error } : undefined}
+                value={file}
+              />
 
-          <Card className="min-w-0 bg-surface" padding={4}>
-            <VStack className="min-h-0" gap={3}>
-              {loadedFont && font ? (
-                <VStack gap={2}>
-                  <Heading className="font-sans" level={3}>
-                    Glyphs ({loadedFont.numGlyphs.toLocaleString()})
-                  </Heading>
-                  <Text color="secondary" type="supporting">
-                    Showing the first 500 glyphs. Hover a cell for its Unicode
-                    code point.
-                  </Text>
-                  <GlyphGrid cellMinWidth={GLYPH_CELL_MIN_WIDTH} font={font} />
+              <div>
+                <FontInspectorPreview
+                  cssFontFamily={cssFontFamily}
+                  fontSize={previewFontSize}
+                  onFontSizeChange={setPreviewFontSize}
+                  onPreviewTextChange={setPreviewText}
+                  previewText={previewText}
+                  weightLabel={fontMetadata?.weightLabel}
+                />
+              </div>
+
+              <Card className="min-w-0 bg-surface" padding={4}>
+                <VStack className="min-h-0" gap={3}>
+                  {loadedFont && font ? (
+                    <VStack gap={2}>
+                      <Heading className="font-sans" level={3}>
+                        Glyphs ({loadedFont.numGlyphs.toLocaleString()})
+                      </Heading>
+                      <Text color="secondary" type="supporting">
+                        Showing the first 500 glyphs. Hover a cell for its
+                        Unicode code point.
+                      </Text>
+                      <GlyphGrid
+                        cellMinWidth={GLYPH_CELL_MIN_WIDTH}
+                        font={font}
+                      />
+                    </VStack>
+                  ) : null}
                 </VStack>
-              ) : null}
-            </VStack>
-          </Card>
-        </div>
+              </Card>
+            </div>
 
-        <aside className={`flex flex-col ${COLUMN_SCROLL_CLASS}`}>
-          <FontInspectorSummaryPanel
-            detected={detected}
-            fontMetadata={fontMetadata}
-            positioningIssues={positioningIssues}
-            summary={summary}
-          />
-        </aside>
+            <aside className={`flex flex-col ${COLUMN_SCROLL_CLASS}`}>
+              <FontInspectorSummaryPanel
+                detected={detected}
+                fontMetadata={fontMetadata}
+                positioningIssues={positioningIssues}
+                summary={summary}
+              />
+            </aside>
+          </>
+        )}
       </div>
     </Section>
   );

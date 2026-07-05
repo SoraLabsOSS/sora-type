@@ -4,7 +4,9 @@ import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { HStack, VStack } from "@astryxdesign/core/Layout";
+import { List, ListItem } from "@astryxdesign/core/List";
 import { Heading, Text } from "@astryxdesign/core/Text";
+import type { InspectorView } from "@/components/font-inspector";
 import {
   DetailRow,
   summarizeScripts,
@@ -30,7 +32,14 @@ interface FontInspectorSidebarProps {
   isPlaceholder: boolean;
   loadedFont: LoadedFontSummary | null;
   onExportPdf: () => void;
+  onViewChange: (view: InspectorView) => void;
+  view: InspectorView;
 }
+
+const INSPECTOR_VIEWS: { label: string; value: InspectorView }[] = [
+  { label: "Overview", value: "overview" },
+  { label: "Raw tables", value: "raw-tables" },
+];
 
 export function FontInspectorSidebar({
   detected,
@@ -39,6 +48,8 @@ export function FontInspectorSidebar({
   isPlaceholder,
   loadedFont,
   onExportPdf,
+  onViewChange,
+  view,
 }: FontInspectorSidebarProps) {
   const scriptSummary = summarizeScripts(detected);
   const summaryFields = fontMetadata
@@ -94,6 +105,19 @@ export function FontInspectorSidebar({
           </Card>
         </VStack>
       ) : null}
+
+      <Card className="bg-surface" padding={2}>
+        <List className="gap-1" density="compact">
+          {INSPECTOR_VIEWS.map((option) => (
+            <ListItem
+              isSelected={option.value === view}
+              key={option.value}
+              label={option.label}
+              onClick={() => onViewChange(option.value)}
+            />
+          ))}
+        </List>
+      </Card>
 
       <div className="mt-auto">
         <Button
