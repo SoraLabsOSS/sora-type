@@ -10,7 +10,6 @@ import {
   DEFAULT_FONT_SIZE,
   FontInspectorPreview,
 } from "@/components/font-inspector-preview";
-import { GlyphsSectionSkeleton } from "@/components/font-inspector-shell";
 import { FontInspectorSidebar } from "@/components/font-inspector-sidebar";
 import { FontInspectorSummaryPanel } from "@/components/font-inspector-summary-panel";
 import {
@@ -18,7 +17,6 @@ import {
   InspectorFontUpload,
 } from "@/components/font-inspector-upload";
 import GlyphGrid from "@/components/glyph-grid";
-import { SkeletonTransition } from "@/components/ui/skeleton";
 import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import { reportAllLanguages } from "@/lib/font-language-detection";
@@ -71,8 +69,8 @@ function openFont(buffer: ArrayBuffer): FontkitFont {
   return "fonts" in opened ? opened.fonts[0] : opened;
 }
 
-const PLACEHOLDER_FONT_URL = "/fonts/TS Crude.ttf";
-const PLACEHOLDER_FONT_NAME = "TS Crude.ttf";
+const PLACEHOLDER_FONT_URL = "/fonts/8894d4fc112b8f24-s.p.woff2";
+const PLACEHOLDER_FONT_NAME = "8894d4fc112b8f24-s.p.woff2";
 
 export default function FontInspector() {
   const [file, setFile] = useState<File | null>(null);
@@ -85,14 +83,9 @@ export default function FontInspector() {
   const [previewFontSize, setPreviewFontSize] = useState(DEFAULT_FONT_SIZE);
   const [previewText, setPreviewText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [isPlaceholder, setIsPlaceholder] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const isContentReady = Boolean(
-    loadedFont && font && fontMetadata && !isBootstrapping && !isLoading
-  );
 
   const loadFontFromBuffer = useCallback(
     (fileName: string, buffer: ArrayBuffer) => {
@@ -114,7 +107,6 @@ export default function FontInspector() {
   );
 
   const loadPlaceholder = useCallback(async () => {
-    setIsBootstrapping(true);
     try {
       const response = await fetch(PLACEHOLDER_FONT_URL);
       const buffer = await response.arrayBuffer();
@@ -128,8 +120,6 @@ export default function FontInspector() {
       setLanguages([]);
       setCssFontFamily(null);
       setIsPlaceholder(false);
-    } finally {
-      setIsBootstrapping(false);
     }
   }, [loadFontFromBuffer]);
 
@@ -172,13 +162,6 @@ export default function FontInspector() {
       setError(null);
 
       if (!next) {
-        setLoadedFont(null);
-        setFont(null);
-        setFontBuffer(null);
-        setFontMetadata(null);
-        setLanguages([]);
-        setCssFontFamily(null);
-        setIsPlaceholder(false);
         await loadPlaceholder();
         return;
       }
@@ -249,7 +232,6 @@ export default function FontInspector() {
           <FontInspectorSidebar
             detected={detected}
             fontMetadata={fontMetadata}
-            isContentReady={isContentReady}
             isExporting={isExporting}
             isPlaceholder={isPlaceholder}
             loadedFont={loadedFont}
@@ -270,7 +252,6 @@ export default function FontInspector() {
             <FontInspectorPreview
               cssFontFamily={cssFontFamily}
               fontSize={previewFontSize}
-              isContentReady={isContentReady}
               onFontSizeChange={setPreviewFontSize}
               onPreviewTextChange={setPreviewText}
               previewText={previewText}
@@ -280,28 +261,18 @@ export default function FontInspector() {
 
           <Card className="min-w-0 bg-surface" padding={4}>
             <VStack className="min-h-0" gap={3}>
-              <SkeletonTransition
-                loading={!isContentReady}
-                skeleton={
-                  <GlyphsSectionSkeleton cellMinWidth={GLYPH_CELL_MIN_WIDTH} />
-                }
-              >
-                {loadedFont && font ? (
-                  <VStack gap={2}>
-                    <Heading className="font-sans" level={3}>
-                      Glyphs ({loadedFont.numGlyphs.toLocaleString()})
-                    </Heading>
-                    <Text color="secondary" type="supporting">
-                      Showing the first 500 glyphs. Hover a cell for its Unicode
-                      code point.
-                    </Text>
-                    <GlyphGrid
-                      cellMinWidth={GLYPH_CELL_MIN_WIDTH}
-                      font={font}
-                    />
-                  </VStack>
-                ) : null}
-              </SkeletonTransition>
+              {loadedFont && font ? (
+                <VStack gap={2}>
+                  <Heading className="font-sans" level={3}>
+                    Glyphs ({loadedFont.numGlyphs.toLocaleString()})
+                  </Heading>
+                  <Text color="secondary" type="supporting">
+                    Showing the first 500 glyphs. Hover a cell for its Unicode
+                    code point.
+                  </Text>
+                  <GlyphGrid cellMinWidth={GLYPH_CELL_MIN_WIDTH} font={font} />
+                </VStack>
+              ) : null}
             </VStack>
           </Card>
         </div>
@@ -310,7 +281,6 @@ export default function FontInspector() {
           <FontInspectorSummaryPanel
             detected={detected}
             fontMetadata={fontMetadata}
-            isContentReady={isContentReady}
             positioningIssues={positioningIssues}
             summary={summary}
           />

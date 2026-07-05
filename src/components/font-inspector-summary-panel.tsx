@@ -8,8 +8,6 @@ import { HStack, VStack } from "@astryxdesign/core/Layout";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { Text } from "@astryxdesign/core/Text";
 import { DetailRow } from "@/components/font-inspector-fields";
-import { SummaryPanelSkeleton } from "@/components/font-inspector-shell";
-import { SkeletonTransition } from "@/components/ui/skeleton";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import { buildFontDetailFields, type FontMetadata } from "@/lib/font-metadata";
 import type { summarizeSupport } from "@/lib/font-report";
@@ -17,7 +15,6 @@ import type { summarizeSupport } from "@/lib/font-report";
 interface FontInspectorSummaryPanelProps {
   detected: (LanguageSupportResult & { rowKey: string })[];
   fontMetadata: FontMetadata | null;
-  isContentReady: boolean;
   positioningIssues: (LanguageSupportResult & { rowKey: string })[];
   summary: ReturnType<typeof summarizeSupport> | null;
 }
@@ -25,17 +22,13 @@ interface FontInspectorSummaryPanelProps {
 export function FontInspectorSummaryPanel({
   detected,
   fontMetadata,
-  isContentReady,
   positioningIssues,
   summary,
 }: FontInspectorSummaryPanelProps) {
   const detailFields = fontMetadata ? buildFontDetailFields(fontMetadata) : [];
 
   return (
-    <SkeletonTransition
-      loading={!isContentReady}
-      skeleton={<SummaryPanelSkeleton />}
-    >
+    <>
       {fontMetadata ? (
         <VStack className="min-h-0 w-full" gap={4}>
           {summary ? (
@@ -220,6 +213,6 @@ export function FontInspectorSummaryPanel({
           ) : null}
         </VStack>
       ) : null}
-    </SkeletonTransition>
+    </>
   );
 }

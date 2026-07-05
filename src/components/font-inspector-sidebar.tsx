@@ -9,8 +9,6 @@ import {
   DetailRow,
   summarizeScripts,
 } from "@/components/font-inspector-fields";
-import { SidebarSkeleton } from "@/components/font-inspector-shell";
-import { SkeletonTransition } from "@/components/ui/skeleton";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import {
   buildFontSummaryFields,
@@ -28,7 +26,6 @@ interface LoadedFontSummary {
 interface FontInspectorSidebarProps {
   detected: (LanguageSupportResult & { rowKey: string })[];
   fontMetadata: FontMetadata | null;
-  isContentReady: boolean;
   isExporting: boolean;
   isPlaceholder: boolean;
   loadedFont: LoadedFontSummary | null;
@@ -38,7 +35,6 @@ interface FontInspectorSidebarProps {
 export function FontInspectorSidebar({
   detected,
   fontMetadata,
-  isContentReady,
   isExporting,
   isPlaceholder,
   loadedFont,
@@ -51,62 +47,57 @@ export function FontInspectorSidebar({
 
   return (
     <VStack className="min-h-0" gap={4}>
-      <SkeletonTransition
-        loading={!isContentReady}
-        skeleton={<SidebarSkeleton />}
-      >
-        {loadedFont && fontMetadata ? (
-          <VStack className="w-full" gap={4}>
-            <Card className="bg-surface" padding={4}>
-              <VStack gap={3}>
-                <Heading className="font-sans" level={4}>
-                  {loadedFont.fullName}
-                </Heading>
-                <Heading className="font-sans" level={2}>
-                  {loadedFont.numGlyphs.toLocaleString()} glyphs
-                </Heading>
-                <HStack gap={2} style={{ flexWrap: "wrap" }}>
-                  <Badge
-                    label={fontMetadata.format.toUpperCase()}
-                    variant="neutral"
-                  />
-                  <Badge
-                    label={formatFileSize(loadedFont.fileSizeBytes)}
-                    variant="neutral"
-                  />
-                  <Badge label={fontMetadata.weightLabel} variant="neutral" />
-                </HStack>
-                {isPlaceholder ? (
-                  <Text color="secondary" type="supporting">
-                    Example font — upload yours to inspect it.
-                  </Text>
-                ) : null}
-              </VStack>
-            </Card>
-
-            <Card className="bg-surface" padding={4}>
-              <VStack gap={3}>
+      {loadedFont && fontMetadata ? (
+        <VStack className="w-full" gap={4}>
+          <Card className="bg-surface" padding={4}>
+            <VStack gap={3}>
+              <Heading className="font-sans" level={4}>
+                {loadedFont.fullName}
+              </Heading>
+              <Heading className="font-sans" level={2}>
+                {loadedFont.numGlyphs.toLocaleString()} glyphs
+              </Heading>
+              <HStack gap={2} style={{ flexWrap: "wrap" }}>
+                <Badge
+                  label={fontMetadata.format.toUpperCase()}
+                  variant="neutral"
+                />
+                <Badge
+                  label={formatFileSize(loadedFont.fileSizeBytes)}
+                  variant="neutral"
+                />
+                <Badge label={fontMetadata.weightLabel} variant="neutral" />
+              </HStack>
+              {isPlaceholder ? (
                 <Text color="secondary" type="supporting">
-                  METADATA
+                  Example font — upload yours to inspect it.
                 </Text>
-                <VStack gap={2}>
-                  {summaryFields.map((field) => (
-                    <DetailRow
-                      key={field.label}
-                      label={field.label}
-                      value={field.value}
-                    />
-                  ))}
-                </VStack>
+              ) : null}
+            </VStack>
+          </Card>
+
+          <Card className="bg-surface" padding={4}>
+            <VStack gap={3}>
+              <Text color="secondary" type="supporting">
+                METADATA
+              </Text>
+              <VStack gap={2}>
+                {summaryFields.map((field) => (
+                  <DetailRow
+                    key={field.label}
+                    label={field.label}
+                    value={field.value}
+                  />
+                ))}
               </VStack>
-            </Card>
-          </VStack>
-        ) : null}
-      </SkeletonTransition>
+            </VStack>
+          </Card>
+        </VStack>
+      ) : null}
 
       <div className="mt-auto">
         <Button
-          isDisabled={isPlaceholder || !isContentReady}
+          isDisabled={isPlaceholder}
           isLoading={isExporting}
           label="Export PDF report"
           onClick={onExportPdf}

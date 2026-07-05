@@ -48,29 +48,31 @@ export default function GlyphGrid({
 }: GlyphGridProps) {
   const cells = useMemo(() => buildGlyphCells(font), [font]);
   const { unitsPerEm, ascent } = font;
-  const cellPadding = cellMinWidth <= 72 ? "p-1.5" : "p-3";
+  const glyphPadding = cellMinWidth <= 72 ? "p-1.5" : "p-2.5";
 
   return (
     <Grid columns={{ minWidth: cellMinWidth, repeat: "fill" }} gap={0}>
       {cells.map((cell) => (
         <div
           aria-label={`Glyph ${cell.char}, Unicode U+${toHex(cell.codePoint)}`}
-          className="group relative aspect-square border border-border"
+          className="group relative flex aspect-square flex-col border border-border"
           key={cell.codePoint}
           role="img"
         >
-          <svg
-            aria-hidden="true"
-            className={`h-full w-full ${cellPadding} text-primary`}
-            viewBox={`0 0 ${unitsPerEm} ${unitsPerEm}`}
-          >
-            <g transform={`translate(0, ${ascent}) scale(1, -1)`}>
-              <path d={cell.pathData} fill="currentColor" />
-            </g>
-          </svg>
+          <div className="relative min-h-0 flex-1">
+            <svg
+              aria-hidden="true"
+              className={`h-full w-full ${glyphPadding} text-primary`}
+              viewBox={`0 0 ${unitsPerEm} ${unitsPerEm}`}
+            >
+              <g transform={`translate(0, ${ascent}) scale(1, -1)`}>
+                <path d={cell.pathData} fill="currentColor" />
+              </g>
+            </svg>
+          </div>
           <span
             aria-hidden="true"
-            className="absolute right-1 bottom-1 text-[10px] text-secondary opacity-60"
+            className="shrink-0 px-1.5 pb-1 text-right font-mono text-[10px] text-secondary leading-none opacity-60"
           >
             {toHex(cell.codePoint)}
           </span>
