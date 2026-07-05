@@ -38,18 +38,6 @@ html[data-theme="light"] {
 }
 
 @layer base {
-  @font-face {
-    font-family: "TS Crude";
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url("/fonts/TS Crude.ttf") format("truetype");
-  }
-
-  .font-ts-crude {
-    font-family: "TS Crude", serif;
-  }
-
   html {
     scrollbar-gutter: stable;
   }
