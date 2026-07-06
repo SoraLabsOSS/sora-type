@@ -13,9 +13,8 @@ function isMark(char: string): boolean {
   return NON_SPACING_MARK.test(char);
 }
 
-// Mirrors hyperglot's Shaper feature set: opt into positioning-relevant
-// features, opt out of substitutions that would hide missing mark
-// attachment (liga/rlig/calt/salt/rclt).
+// Opt into positioning-relevant features; opt out of substitutions that
+// would hide missing mark attachment (liga/rlig/calt/salt/rclt).
 const SHAPING_FEATURES = [
   new Feature("kern", 1),
   new Feature("mark", 1),
@@ -38,9 +37,9 @@ export function createShapingFont(fontData: ArrayBuffer): Font {
 }
 
 /**
- * Ports hyperglot's check_mark_attachment: shapes `input` (a base character
- * plus its combining marks) and confirms every mark glyph actually moved
- * (got positioned by GPOS), rather than just existing unattached at 0,0.
+ * Shapes `input` (a base character plus its combining marks) and confirms
+ * every mark glyph actually moved (got positioned by GPOS), rather than
+ * just existing unattached at 0,0.
  */
 export function checkMarkAttachment(font: Font, input: string): boolean {
   const composed = input.normalize("NFC");

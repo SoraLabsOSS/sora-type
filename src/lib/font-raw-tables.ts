@@ -253,7 +253,7 @@ function flattenTableRows(
   }
 }
 
-/** FontDrop-style two-column dump: naming fields left, table metrics right. */
+/** Two-column raw dump: naming fields left, table metrics right. */
 export function buildRawDisplayColumns(font: FontkitFont): {
   left: RawDisplayRow[];
   right: RawDisplayRow[];

@@ -1,18 +1,24 @@
 "use client";
 
 import { Card } from "@astryxdesign/core/Card";
-import { VStack } from "@astryxdesign/core/Layout";
+import { HStack, VStack } from "@astryxdesign/core/Layout";
 import { Section } from "@astryxdesign/core/Section";
 import { Heading, Text } from "@astryxdesign/core/Text";
+import { ToggleButton } from "@astryxdesign/core/ToggleButton";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
 import { useCallback, useEffect, useState } from "react";
+import { FontInspectorLayoutFeatures } from "@/components/font-inspector-layout-features";
+import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
 import {
   DEFAULT_FONT_SIZE,
   FontInspectorPreview,
 } from "@/components/font-inspector-preview";
 import { FontInspectorRawTables } from "@/components/font-inspector-raw-tables";
 import { FontInspectorSidebar } from "@/components/font-inspector-sidebar";
+import { FontInspectorStylesheet } from "@/components/font-inspector-stylesheet";
+import { FontInspectorSubsetting } from "@/components/font-inspector-subsetting";
 import { FontInspectorSummaryPanel } from "@/components/font-inspector-summary-panel";
+import { FontInspectorTester } from "@/components/font-inspector-tester";
 import {
   INSPECTOR_FONT_ACCEPT,
   InspectorFontUpload,
@@ -38,13 +44,18 @@ const INSPECTOR_SECTION_CLASS = [
 const INSPECTOR_GRID_CLASS =
   "grid grid-cols-1 gap-4 max-lg:min-h-min max-lg:flex-none lg:min-h-0 lg:flex-1 lg:h-full lg:grid-cols-[280px_minmax(0,1fr)_minmax(240px,280px)] lg:overflow-hidden";
 
-export type InspectorView = "overview" | "raw-tables";
+export type InspectorView =
+  | "css"
+  | "layout-features"
+  | "overview"
+  | "raw-tables"
+  | "subsetting"
+  | "tester";
 
 /**
  * Some language codes have multiple orthographies sharing one script (e.g.
  * "deu" has two Latin orthographies), so `code-script` alone can collide as
- * a React key — disambiguate with an occurrence index, same fix as
- * font-compare.ts's makeRowKey.
+ * a React key — disambiguate with an occurrence index.
  */
 function withRowKeys(
   results: LanguageSupportResult[]
@@ -90,6 +101,7 @@ export default function FontInspector() {
   const [isPlaceholder, setIsPlaceholder] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<InspectorView>("overview");
+  const [groupGlyphsByCategory, setGroupGlyphsByCategory] = useState(false);
 
   const loadFontFromBuffer = useCallback(
     (fileName: string, buffer: ArrayBuffer) => {
@@ -190,6 +202,26 @@ export default function FontInspector() {
     [loadFontFromBuffer, loadPlaceholder]
   );
 
+  const handleLocalFont = useCallback(
+    (fileName: string, buffer: ArrayBuffer) => {
+      setFile(null);
+      setError(null);
+      setIsPlaceholder(false);
+      try {
+        loadFontFromBuffer(fileName, buffer);
+      } catch (err) {
+        setLoadedFont(null);
+        setFont(null);
+        setFontBuffer(null);
+        setFontMetadata(null);
+        setLanguages([]);
+        setCssFontFamily(null);
+        setError(err instanceof Error ? err.message : "Could not parse font");
+      }
+    },
+    [loadFontFromBuffer]
+  );
+
   async function handleExportPdf() {
     if (!file) {
       return;
@@ -245,7 +277,7 @@ export default function FontInspector() {
           />
         </aside>
 
-        {view === "raw-tables" ? (
+        {view === "raw-tables" && (
           <div
             className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
           >
@@ -257,7 +289,81 @@ export default function FontInspector() {
               </Text>
             )}
           </div>
-        ) : (
+        )}
+
+        {view === "tester" && (
+          <div
+            className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
+          >
+            {font && fontMetadata ? (
+              <FontInspectorTester
+                cssFontFamily={cssFontFamily}
+                font={font}
+                metadata={fontMetadata}
+              />
+            ) : (
+              <Text color="secondary" type="supporting">
+                Load a font to test it.
+              </Text>
+            )}
+          </div>
+        )}
+
+        {view === "layout-features" && (
+          <div
+            className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
+          >
+            {font && fontMetadata ? (
+              <FontInspectorLayoutFeatures
+                cssFontFamily={cssFontFamily}
+                font={font}
+                metadata={fontMetadata}
+              />
+            ) : (
+              <Text color="secondary" type="supporting">
+                Load a font to inspect its layout features.
+              </Text>
+            )}
+          </div>
+        )}
+
+        {view === "css" && (
+          <div
+            className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
+          >
+            {font && fontMetadata && loadedFont ? (
+              <FontInspectorStylesheet
+                fileName={loadedFont.fileName}
+                font={font}
+                metadata={fontMetadata}
+              />
+            ) : (
+              <Text color="secondary" type="supporting">
+                Load a font to generate its stylesheet.
+              </Text>
+            )}
+          </div>
+        )}
+
+        {view === "subsetting" && (
+          <div
+            className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
+          >
+            {font && fontMetadata && loadedFont ? (
+              <FontInspectorSubsetting
+                fileName={loadedFont.fileName}
+                font={font}
+                metadata={fontMetadata}
+              />
+            ) : (
+              <Text color="secondary" type="supporting">
+                Load a font to see subsetting recommendations.
+              </Text>
+            )}
+          </div>
+        )}
+
+        {view === "overview" && (
           <>
             <div className={`flex flex-col gap-4 ${COLUMN_SCROLL_CLASS}`}>
               <InspectorFontUpload
@@ -266,6 +372,11 @@ export default function FontInspector() {
                 onChange={handleFile}
                 status={error ? { type: "error", message: error } : undefined}
                 value={file}
+              />
+
+              <InspectorLocalFontPicker
+                isDisabled={isLoading}
+                onSelect={handleLocalFont}
               />
 
               <div>
@@ -283,9 +394,17 @@ export default function FontInspector() {
                 <VStack className="min-h-0" gap={3}>
                   {loadedFont && font ? (
                     <VStack gap={2}>
-                      <Heading className="font-sans" level={3}>
-                        Glyphs ({loadedFont.numGlyphs.toLocaleString()})
-                      </Heading>
+                      <HStack align="center" gap={2} justify="between">
+                        <Heading className="font-sans" level={3}>
+                          Glyphs ({loadedFont.numGlyphs.toLocaleString()})
+                        </Heading>
+                        <ToggleButton
+                          isPressed={groupGlyphsByCategory}
+                          label="Group by category"
+                          onPressedChange={setGroupGlyphsByCategory}
+                          size="sm"
+                        />
+                      </HStack>
                       <Text color="secondary" type="supporting">
                         Showing the first 500 glyphs. Hover a cell for its
                         Unicode code point.
@@ -293,6 +412,7 @@ export default function FontInspector() {
                       <GlyphGrid
                         cellMinWidth={GLYPH_CELL_MIN_WIDTH}
                         font={font}
+                        groupByCategory={groupGlyphsByCategory}
                       />
                     </VStack>
                   ) : null}

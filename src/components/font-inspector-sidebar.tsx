@@ -39,6 +39,10 @@ interface FontInspectorSidebarProps {
 const INSPECTOR_VIEWS: { label: string; value: InspectorView }[] = [
   { label: "Overview", value: "overview" },
   { label: "Raw tables", value: "raw-tables" },
+  { label: "Tester", value: "tester" },
+  { label: "Layout Features", value: "layout-features" },
+  { label: "CSS", value: "css" },
+  { label: "Subsetting", value: "subsetting" },
 ];
 
 export function FontInspectorSidebar({

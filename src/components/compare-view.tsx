@@ -51,6 +51,11 @@ const EMPTY_SLOT: FontSlotState = {
 const DEFAULT_FONT_SIZE = 14;
 const DEFAULT_LINE_HEIGHT = 1.5;
 const COMPARE_GRID_COLUMNS = { minWidth: 320, max: 2 } as const;
+const COMPARE_SECTION_CLASS = [
+  "flex min-h-0 flex-1 flex-col",
+  "max-lg:flex-none max-lg:overflow-visible",
+  "scrollbar-hidden lg:overflow-y-auto lg:overscroll-y-contain",
+].join(" ");
 const SAMPLE_TEXT =
   "Traditionally, text is composed to create a readable, coherent, and visually satisfying typeface that works invisibly, without the awareness of the reader. Even distribution of typeset material, with a minimum of distractions and anomalies, is aimed at producing clarity and transparency.";
 
@@ -71,7 +76,7 @@ function isSlotReady(state: FontSlotState): boolean {
   return Boolean(state.font && state.meta && state.cssFontFamily);
 }
 
-function FontDropzone({
+function CompareFontInput({
   onChange,
   slot,
   state,
@@ -327,8 +332,8 @@ export default function CompareView() {
   const canPreview = leftReady || rightReady;
 
   return (
-    <Section padding={6}>
-      <VStack gap={6} style={{ width: "100%" }}>
+    <Section className={COMPARE_SECTION_CLASS} padding={6}>
+      <VStack className="pb-4" gap={6} style={{ width: "100%" }}>
         <VStack gap={1}>
           <Heading className="font-sans" level={1}>
             Compare
@@ -341,14 +346,14 @@ export default function CompareView() {
 
         <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
           <GridSpan columns={1}>
-            <FontDropzone
+            <CompareFontInput
               onChange={handleFile}
               slot="left"
               state={slots.left}
             />
           </GridSpan>
           <GridSpan columns={1}>
-            <FontDropzone
+            <CompareFontInput
               onChange={handleFile}
               slot="right"
               state={slots.right}

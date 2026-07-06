@@ -29,11 +29,9 @@ export interface AccuracyComparisonResult {
 }
 
 /**
- * Diffs a cmap-only check (what a FontDrop-style tool would report) against
- * this engine's full shaping-verified check, for the same font. Surfaces
- * `discrepancy: true` where cmap-only would claim support but the font
- * actually fails to position marks correctly — the concrete evidence for
- * sora-type's accuracy differentiator.
+ * Diffs a cmap-only check against this engine's full shaping-verified check
+ * for the same font. Surfaces `discrepancy: true` where cmap-only would claim
+ * support but the font actually fails to position marks correctly.
  */
 export function compareAccuracy(
   font: FontkitFont,

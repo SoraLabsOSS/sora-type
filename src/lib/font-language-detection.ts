@@ -42,8 +42,7 @@ function decomposedCodePoints(char: string): number[] {
 }
 
 /**
- * Checks a single orthography against a font, following the same three
- * tiers hyperglot's checker does:
+ * Checks a single orthography against a font in three tiers:
  *  1. Direct coverage — every character's codepoint(s) exist in the font.
  *  2. Decomposed fallback — a missing precomposed character can still be
  *     typed via its base letter + combining marks, if the font has those.
@@ -132,15 +131,15 @@ function checkAllOrthographies(
 
 /**
  * Returns only the languages/orthographies the font safely supports (full or
- * via decomposition + verified shaping) — for a FontDrop-style "Detected"
- * list. Orthographies where glyphs exist but marks fail to position
- * (`"positioning-failed"`) are excluded here since the font can't actually
- * render them correctly; use `reportAllLanguages` to see those too.
+ * via decomposition + verified shaping). Orthographies where glyphs exist
+ * but marks fail to position (`"positioning-failed"`) are excluded here since
+ * the font can't actually render them correctly; use `reportAllLanguages`
+ * to see those too.
  *
  * `fontData` is required to run the shaping/mark-attachment check; pass the
  * same raw font bytes used to open `font` with fontkit. If omitted, tier 3
- * is skipped and results fall back to cmap-only coverage (like FontDrop) —
- * which will over-report support, since it can't see positioning failures.
+ * is skipped and results fall back to cmap-only coverage, which will
+ * over-report support since it can't see positioning failures.
  */
 export function detectLanguages(
   font: FontkitFont,

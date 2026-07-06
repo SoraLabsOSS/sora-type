@@ -38,6 +38,8 @@ Planned subpages: compare two fonts, language report, Vertical Metrics Report, A
 
 Language support detection ports [Hyperglot](https://github.com/rosettatype/hyperglot)'s checking approach (the same database FontDrop's own "Language Report" cites) to JS, using `harfbuzzjs` instead of Python's `uharfbuzz` — both bind the same HarfBuzz C library, so shaping results are equivalent, not reimplemented.
 
+Hyperglot is Apache License 2.0. `src/data/languages.json` is a generated derivative of its per-language YAML database (see `scripts/build-language-db.ts`), not hand-authored — the checking *logic* below is a from-scratch reimplementation, but the *data* is theirs, compiled to JSON.
+
 Three tiers, checked in order (see `src/lib/font-language-detection.ts`):
 
 1. **Coverage** — every character's codepoint(s) present in the font (`fontkit`'s `characterSet`).
@@ -53,6 +55,12 @@ bun run build:languages
 ```
 
 This downloads Hyperglot's data fresh from GitHub, extracts it to a temp dir, and rebuilds the JSON — run it whenever Hyperglot's upstream data should be refreshed.
+
+## Credits
+
+- **OpenType feature defaults and native CSS mappings** (`src/lib/opentype-feature-classification.ts`, `src/lib/opentype-feature-variants.ts`) — the fixed/on/off feature-state table and the `font-variant-*` equivalents table are ported from [Wakamai Fondue](https://github.com/Wakamai-Fondue/wakamai-fondue-engine)'s `layout-features.js` (Google LLC, Apache License 2.0), trimmed to tag-only lookups.
+- **Generated stylesheet architecture** (`src/lib/font-stylesheet.ts`) — the "combine feature/instance classes freely via CSS custom properties" approach follows the same design [Wakamai Fondue uses](https://pixelambacht.nl/2019/fixing-variable-font-inheritance/), reimplemented independently against this project's own extracted font data rather than vendoring theirs.
+- **Language database** (`src/data/languages.json`) — generated from [Hyperglot](https://github.com/rosettatype/hyperglot)'s per-language YAML data (Apache License 2.0) via `scripts/build-language-db.ts`; see [Language detection](#language-detection) above for what's ported vs. reimplemented.
 
 ## Getting started
 

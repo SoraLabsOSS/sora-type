@@ -1,6 +1,9 @@
 /**
  * Builds src/data/languages.json from the Hyperglot language database
- * (https://github.com/rosettatype/hyperglot).
+ * (https://github.com/rosettatype/hyperglot, Apache License 2.0). The
+ * output is a generated derivative of Hyperglot's per-language YAML data,
+ * not hand-authored — see the "Language detection" / "Credits" sections
+ * in the project README for what's ported vs. reimplemented.
  *
  * Usage:
  *   bun run scripts/build-language-db.ts              # auto-downloads Hyperglot's data

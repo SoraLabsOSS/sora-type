@@ -1,5 +1,5 @@
 /**
- * Maps shadcn / @soralabs registry semantic tokens to Matcha (Astryx) system tokens.
+ * Maps shadcn registry semantic tokens to Matcha (Astryx) system tokens.
  * Import after matcha.css so --color-* tokens are available on the theme root.
  */
 
