@@ -155,6 +155,10 @@ export default function FontInspector() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<InspectorView>("overview");
   const [groupGlyphsByCategory, setGroupGlyphsByCategory] = useState(false);
+  // Bumped whenever a font is loaded from somewhere other than the local-font
+  // picker, so its Typeahead selection (and displayed font name) resets
+  // instead of showing a stale pick once a different font is active.
+  const [localFontPickerKey, setLocalFontPickerKey] = useState(0);
 
   const loadFontFromBuffer = useCallback(
     (fileName: string, buffer: ArrayBuffer) => {
@@ -243,6 +247,7 @@ export default function FontInspector() {
       const next = Array.isArray(selected) ? selected[0] : selected;
       setFile(next ?? null);
       setError(null);
+      setLocalFontPickerKey((key) => key + 1);
 
       if (!next) {
         await loadPlaceholder();
@@ -453,6 +458,8 @@ export default function FontInspector() {
 
               <InspectorLocalFontPicker
                 isDisabled={isLoading}
+                key={localFontPickerKey}
+                onClear={loadPlaceholder}
                 onSelect={handleLocalFont}
               />
 

@@ -25,6 +25,7 @@ function toItems(entries: LocalFontEntry[]): LocalFontItem[] {
 
 interface InspectorLocalFontPickerProps {
   isDisabled?: boolean;
+  onClear?: () => void;
   onSelect: (fileName: string, buffer: ArrayBuffer) => void;
 }
 
@@ -35,6 +36,7 @@ interface InspectorLocalFontPickerProps {
  */
 export function InspectorLocalFontPicker({
   isDisabled,
+  onClear,
   onSelect,
 }: InspectorLocalFontPickerProps) {
   const supported = useMemo(() => isLocalFontAccessSupported(), []);
@@ -83,21 +85,22 @@ export function InspectorLocalFontPicker({
       setError(null);
       if (!item?.auxiliaryData) {
         setValue(null);
+        onClear?.();
         return;
       }
       try {
         const { fontData } = item.auxiliaryData;
         const buffer = await readLocalFontBuffer(fontData);
         onSelect(fontData.postscriptName || item.label, buffer);
+        setValue(item);
       } catch (err) {
+        setValue(null);
         setError(
           err instanceof Error ? err.message : "Could not read local font"
         );
-      } finally {
-        setValue(null);
       }
     },
-    [onSelect]
+    [onSelect, onClear]
   );
 
   if (!supported) {

@@ -14,11 +14,26 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Token } from "@astryxdesign/core/Token";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { CompareCharacters } from "@/components/compare-characters";
+import { CompareCss } from "@/components/compare-css";
+import { CompareData } from "@/components/compare-data";
+import { CompareFeatures } from "@/components/compare-features";
+import { CompareOverlay } from "@/components/compare-overlay";
+import { CompareWaterfall } from "@/components/compare-waterfall";
 import { buildComparisonMatrix } from "@/lib/font-compare";
 import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
+import { extractFontMetadata, type FontMetadata } from "@/lib/font-metadata";
 
 type Slot = "left" | "right";
-type TabValue = "text" | "waterfall" | "characters" | "data" | "about";
+type TabValue =
+  | "text"
+  | "waterfall"
+  | "characters"
+  | "features"
+  | "css"
+  | "overlay"
+  | "data"
+  | "about";
 
 interface SlotMeta {
   familyName: string;
@@ -28,7 +43,7 @@ interface SlotMeta {
   style: string;
 }
 
-interface FontSlotState {
+export interface FontSlotState {
   buffer: ArrayBuffer | null;
   cssFontFamily: string | null;
   error: string | null;
@@ -36,6 +51,13 @@ interface FontSlotState {
   font: FontkitFont | null;
   isLoading: boolean;
   meta: SlotMeta | null;
+}
+
+export interface CompareFontSlot {
+  cssFontFamily: string | null;
+  fileName: string;
+  font: FontkitFont;
+  metadata: FontMetadata;
 }
 
 const EMPTY_SLOT: FontSlotState = {
@@ -63,6 +85,9 @@ const TABS: { label: string; value: TabValue }[] = [
   { value: "text", label: "Text" },
   { value: "waterfall", label: "Waterfall" },
   { value: "characters", label: "Characters" },
+  { value: "features", label: "Features" },
+  { value: "css", label: "CSS" },
+  { value: "overlay", label: "Overlay" },
   { value: "data", label: "Data" },
   { value: "about", label: "About Compare" },
 ];
@@ -70,6 +95,17 @@ const TABS: { label: string; value: TabValue }[] = [
 function openFont(buffer: ArrayBuffer): FontkitFont {
   const opened = createFont(Buffer.from(buffer));
   return "fonts" in opened ? opened.fonts[0] : opened;
+}
+
+function buildFontSlot(
+  font: FontkitFont | null,
+  metadata: FontMetadata | null,
+  fileName: string | undefined,
+  cssFontFamily: string | null
+): CompareFontSlot | null {
+  return font && metadata
+    ? { font, metadata, fileName: fileName ?? "", cssFontFamily }
+    : null;
 }
 
 function isSlotReady(state: FontSlotState): boolean {
@@ -124,6 +160,7 @@ function ComparisonColumn({
   onLineHeightChange,
   slot,
   state,
+  text,
 }: {
   fontSize: number;
   lineHeight: number;
@@ -132,6 +169,7 @@ function ComparisonColumn({
   onLineHeightChange: (slot: Slot, value: number) => void;
   slot: Slot;
   state: FontSlotState;
+  text: string;
 }) {
   if (!(state.font && state.meta && state.cssFontFamily)) {
     return (
@@ -192,7 +230,7 @@ function ComparisonColumn({
             }}
             type="body"
           >
-            {SAMPLE_TEXT}
+            {text}
           </Text>
         </VStack>
       </VStack>
@@ -212,6 +250,7 @@ export default function CompareView() {
   const [rightLineHeight, setRightLineHeight] = useState(DEFAULT_LINE_HEIGHT);
   const [syncSliders, setSyncSliders] = useState(false);
   const [normalLineHeight, setNormalLineHeight] = useState(false);
+  const [customText, setCustomText] = useState("");
 
   const updateSlot = useCallback(
     (slot: Slot, patch: Partial<FontSlotState>) => {
@@ -306,11 +345,11 @@ export default function CompareView() {
     [syncSliders]
   );
 
-  const commonScripts = useMemo(() => {
+  const comparisonMatrix = useMemo(() => {
     if (!(slots.left.font && slots.right.font)) {
-      return [];
+      return null;
     }
-    const matrix = buildComparisonMatrix([
+    return buildComparisonMatrix([
       {
         id: "left",
         fullName: slots.left.meta?.fullName ?? "Left",
@@ -324,11 +363,16 @@ export default function CompareView() {
         fontData: slots.right.buffer ?? undefined,
       },
     ]);
+  }, [slots.left, slots.right]);
 
+  const commonScripts = useMemo(() => {
+    if (!comparisonMatrix) {
+      return [];
+    }
     const scripts = new Set<string>();
-    for (const row of matrix.languages) {
-      const leftCell = matrix.cells.left[row.key];
-      const rightCell = matrix.cells.right[row.key];
+    for (const row of comparisonMatrix.languages) {
+      const leftCell = comparisonMatrix.cells.left[row.key];
+      const rightCell = comparisonMatrix.cells.right[row.key];
       const leftOk =
         leftCell?.support === "full" || leftCell?.support === "decomposed";
       const rightOk =
@@ -338,7 +382,50 @@ export default function CompareView() {
       }
     }
     return [...scripts].sort();
-  }, [slots.left, slots.right]);
+  }, [comparisonMatrix]);
+
+  const leftMetadata = useMemo(
+    () =>
+      slots.left.font && slots.left.meta
+        ? extractFontMetadata(slots.left.font, slots.left.meta.fileName)
+        : null,
+    [slots.left.font, slots.left.meta]
+  );
+
+  const rightMetadata = useMemo(
+    () =>
+      slots.right.font && slots.right.meta
+        ? extractFontMetadata(slots.right.font, slots.right.meta.fileName)
+        : null,
+    [slots.right.font, slots.right.meta]
+  );
+
+  const leftFontSlot = useMemo(
+    () =>
+      buildFontSlot(
+        slots.left.font,
+        leftMetadata,
+        slots.left.meta?.fileName,
+        slots.left.cssFontFamily
+      ),
+    [slots.left.font, slots.left.meta, slots.left.cssFontFamily, leftMetadata]
+  );
+
+  const rightFontSlot = useMemo(
+    () =>
+      buildFontSlot(
+        slots.right.font,
+        rightMetadata,
+        slots.right.meta?.fileName,
+        slots.right.cssFontFamily
+      ),
+    [
+      slots.right.font,
+      slots.right.meta,
+      slots.right.cssFontFamily,
+      rightMetadata,
+    ]
+  );
 
   const leftReady = isSlotReady(slots.left);
   const rightReady = isSlotReady(slots.right);
@@ -395,60 +482,294 @@ export default function CompareView() {
           ) : null}
         </VStack>
 
-        {activeTab === "text" ? (
-          <VStack gap={4}>
-            {canPreview ? (
-              <Card padding={4}>
-                <HStack gap={6} wrap="wrap">
-                  <Switch
-                    label="Synchronize font size and line height"
-                    onChange={setSyncSliders}
-                    value={syncSliders}
-                  />
-                  <Switch
-                    label="Set CSS 'line-height: normal'"
-                    onChange={setNormalLineHeight}
-                    value={normalLineHeight}
-                  />
-                </HStack>
-              </Card>
-            ) : null}
-
-            {canPreview ? (
-              <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
-                <GridSpan columns={1}>
-                  <ComparisonColumn
-                    fontSize={leftSize}
-                    lineHeight={leftLineHeight}
-                    normalLineHeight={normalLineHeight}
-                    onFontSizeChange={handleFontSizeChange}
-                    onLineHeightChange={handleLineHeightChange}
-                    slot="left"
-                    state={slots.left}
-                  />
-                </GridSpan>
-                <GridSpan columns={1}>
-                  <ComparisonColumn
-                    fontSize={rightSize}
-                    lineHeight={rightLineHeight}
-                    normalLineHeight={normalLineHeight}
-                    onFontSizeChange={handleFontSizeChange}
-                    onLineHeightChange={handleLineHeightChange}
-                    slot="right"
-                    state={slots.right}
-                  />
-                </GridSpan>
-              </Grid>
-            ) : (
-              <CompareEmptyPanel />
-            )}
+        <Card padding={4}>
+          <VStack gap={2}>
+            <Text type="body">Custom preview text</Text>
+            <Text color="secondary" type="supporting">
+              Used in Text and Waterfall — leave blank to use the default
+              sample.
+            </Text>
+            <textarea
+              className="w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors placeholder:text-secondary focus-visible:border-accent"
+              onChange={(event) => setCustomText(event.target.value)}
+              placeholder={SAMPLE_TEXT}
+              rows={2}
+              spellCheck={false}
+              value={customText}
+            />
           </VStack>
-        ) : (
-          <Text color="secondary" type="body">
-            Coming soon.
-          </Text>
-        )}
+        </Card>
+
+        <CompareTabPanels
+          activeTab={activeTab}
+          canPreview={canPreview}
+          comparisonMatrix={comparisonMatrix}
+          customText={customText}
+          handleFontSizeChange={handleFontSizeChange}
+          handleLineHeightChange={handleLineHeightChange}
+          leftFontSlot={leftFontSlot}
+          leftLineHeight={leftLineHeight}
+          leftMetadata={leftMetadata}
+          leftSize={leftSize}
+          normalLineHeight={normalLineHeight}
+          rightFontSlot={rightFontSlot}
+          rightLineHeight={rightLineHeight}
+          rightMetadata={rightMetadata}
+          rightSize={rightSize}
+          setNormalLineHeight={setNormalLineHeight}
+          setSyncSliders={setSyncSliders}
+          slots={slots}
+          syncSliders={syncSliders}
+        />
       </VStack>
     </Section>
   );
+}
+
+function TextTabPanel({
+  canPreview,
+  handleFontSizeChange,
+  handleLineHeightChange,
+  leftLineHeight,
+  leftSize,
+  normalLineHeight,
+  rightLineHeight,
+  rightSize,
+  setNormalLineHeight,
+  setSyncSliders,
+  slots,
+  syncSliders,
+  text,
+}: {
+  canPreview: boolean;
+  handleFontSizeChange: (slot: Slot, value: number) => void;
+  handleLineHeightChange: (slot: Slot, value: number) => void;
+  leftLineHeight: number;
+  leftSize: number;
+  normalLineHeight: boolean;
+  rightLineHeight: number;
+  rightSize: number;
+  setNormalLineHeight: (value: boolean) => void;
+  setSyncSliders: (value: boolean) => void;
+  slots: Record<Slot, FontSlotState>;
+  syncSliders: boolean;
+  text: string;
+}) {
+  return (
+    <VStack gap={4}>
+      {canPreview ? (
+        <Card padding={4}>
+          <HStack gap={6} wrap="wrap">
+            <Switch
+              label="Synchronize font size and line height"
+              onChange={setSyncSliders}
+              value={syncSliders}
+            />
+            <Switch
+              label="Set CSS 'line-height: normal'"
+              onChange={setNormalLineHeight}
+              value={normalLineHeight}
+            />
+          </HStack>
+        </Card>
+      ) : null}
+
+      {canPreview ? (
+        <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
+          <GridSpan columns={1}>
+            <ComparisonColumn
+              fontSize={leftSize}
+              lineHeight={leftLineHeight}
+              normalLineHeight={normalLineHeight}
+              onFontSizeChange={handleFontSizeChange}
+              onLineHeightChange={handleLineHeightChange}
+              slot="left"
+              state={slots.left}
+              text={text}
+            />
+          </GridSpan>
+          <GridSpan columns={1}>
+            <ComparisonColumn
+              fontSize={rightSize}
+              lineHeight={rightLineHeight}
+              normalLineHeight={normalLineHeight}
+              onFontSizeChange={handleFontSizeChange}
+              onLineHeightChange={handleLineHeightChange}
+              slot="right"
+              state={slots.right}
+              text={text}
+            />
+          </GridSpan>
+        </Grid>
+      ) : (
+        <CompareEmptyPanel />
+      )}
+    </VStack>
+  );
+}
+
+function AboutTabPanel() {
+  return (
+    <Card padding={4}>
+      <VStack gap={3}>
+        <Text as="p" type="body">
+          Compare loads two fonts entirely in your browser and lines them up
+          side by side.
+        </Text>
+        <Text as="p" type="body">
+          <b>Text</b> shows reading feel at one size and line height.{" "}
+          <b>Waterfall</b> steps through a size ladder so you can spot where a
+          face gets fragile at small sizes or heavy at large ones.{" "}
+          <b>Characters</b> shows every glyph each font maps, so you can see
+          coverage gaps at a glance. <b>Features</b> compares which OpenType
+          layout features each font defines — ligatures, small caps, stylistic
+          sets — and previews the ones both fonts share. <b>CSS</b> gives you a
+          ready-to-use stylesheet for each font. <b>Overlay</b> superimposes one
+          glyph from both fonts so you can see shape differences directly.{" "}
+          <b>Data</b> compares metadata, metrics, variable axes, and language
+          support, highlighting where the two fonts differ. Type your own text
+          above to use it in Text and Waterfall.
+        </Text>
+      </VStack>
+    </Card>
+  );
+}
+
+function GlyphLevelTabPanel({
+  activeTab,
+  canPreview,
+  leftFontSlot,
+  rightFontSlot,
+  slots,
+}: {
+  activeTab: "characters" | "css" | "features" | "overlay";
+  canPreview: boolean;
+  leftFontSlot: CompareFontSlot | null;
+  rightFontSlot: CompareFontSlot | null;
+  slots: Record<Slot, FontSlotState>;
+}) {
+  if (!canPreview) {
+    return <CompareEmptyPanel />;
+  }
+  if (activeTab === "characters") {
+    return <CompareCharacters left={slots.left} right={slots.right} />;
+  }
+  if (activeTab === "features") {
+    return <CompareFeatures left={leftFontSlot} right={rightFontSlot} />;
+  }
+  if (activeTab === "css") {
+    return <CompareCss left={leftFontSlot} right={rightFontSlot} />;
+  }
+  return <CompareOverlay left={slots.left.font} right={slots.right.font} />;
+}
+
+function CompareTabPanels({
+  activeTab,
+  canPreview,
+  comparisonMatrix,
+  customText,
+  handleFontSizeChange,
+  handleLineHeightChange,
+  leftFontSlot,
+  leftLineHeight,
+  leftMetadata,
+  leftSize,
+  normalLineHeight,
+  rightFontSlot,
+  rightLineHeight,
+  rightMetadata,
+  rightSize,
+  setNormalLineHeight,
+  setSyncSliders,
+  slots,
+  syncSliders,
+}: {
+  activeTab: TabValue;
+  canPreview: boolean;
+  comparisonMatrix: ReturnType<typeof buildComparisonMatrix> | null;
+  customText: string;
+  handleFontSizeChange: (slot: Slot, value: number) => void;
+  handleLineHeightChange: (slot: Slot, value: number) => void;
+  leftFontSlot: CompareFontSlot | null;
+  leftLineHeight: number;
+  leftMetadata: FontMetadata | null;
+  leftSize: number;
+  normalLineHeight: boolean;
+  rightFontSlot: CompareFontSlot | null;
+  rightLineHeight: number;
+  rightMetadata: FontMetadata | null;
+  rightSize: number;
+  setNormalLineHeight: (value: boolean) => void;
+  setSyncSliders: (value: boolean) => void;
+  slots: Record<Slot, FontSlotState>;
+  syncSliders: boolean;
+}) {
+  const trimmedCustomText = customText.trim();
+
+  if (activeTab === "text") {
+    return (
+      <TextTabPanel
+        canPreview={canPreview}
+        handleFontSizeChange={handleFontSizeChange}
+        handleLineHeightChange={handleLineHeightChange}
+        leftLineHeight={leftLineHeight}
+        leftSize={leftSize}
+        normalLineHeight={normalLineHeight}
+        rightLineHeight={rightLineHeight}
+        rightSize={rightSize}
+        setNormalLineHeight={setNormalLineHeight}
+        setSyncSliders={setSyncSliders}
+        slots={slots}
+        syncSliders={syncSliders}
+        text={trimmedCustomText || SAMPLE_TEXT}
+      />
+    );
+  }
+
+  if (activeTab === "waterfall") {
+    return canPreview ? (
+      <CompareWaterfall
+        left={slots.left}
+        right={slots.right}
+        text={trimmedCustomText || undefined}
+      />
+    ) : (
+      <CompareEmptyPanel />
+    );
+  }
+
+  if (
+    activeTab === "characters" ||
+    activeTab === "features" ||
+    activeTab === "css" ||
+    activeTab === "overlay"
+  ) {
+    return (
+      <GlyphLevelTabPanel
+        activeTab={activeTab}
+        canPreview={canPreview}
+        leftFontSlot={leftFontSlot}
+        rightFontSlot={rightFontSlot}
+        slots={slots}
+      />
+    );
+  }
+
+  if (activeTab === "data") {
+    return comparisonMatrix ? (
+      <CompareData
+        leftMeta={leftMetadata}
+        matrix={comparisonMatrix}
+        rightMeta={rightMetadata}
+      />
+    ) : (
+      <Card padding={4}>
+        <Text color="secondary" type="body">
+          Load both fonts to compare their metadata and language support.
+        </Text>
+      </Card>
+    );
+  }
+
+  return <AboutTabPanel />;
 }

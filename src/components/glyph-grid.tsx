@@ -145,16 +145,64 @@ function toHex(codePoint: number): string {
   return codePoint.toString(16).padStart(4, "0");
 }
 
+// Padding around the reference box so glyphs that exactly fill it (e.g. an
+// accented capital) don't render flush against the cell edge.
+const VIEWBOX_PADDING_RATIO = 0.06;
+
+interface GlyphViewBox {
+  height: number;
+  minX: number;
+  minY: number;
+  width: number;
+}
+
+/**
+ * The nominal em box (x: [0, unitsPerEm], y: [descent, ascent]) is what lets
+ * different fonts' glyphs compare at the same visual scale — it's the
+ * "same point size" reference every font is conceptually drawn against.
+ * Sizing the viewBox to it alone was the original bug: accented capitals,
+ * overshoot on round letters, or fonts whose ascent+|descent| doesn't sum to
+ * unitsPerEm routinely have ink outside that box, so tall or wide glyphs got
+ * clipped by the SVG viewBox.
+ *
+ * Fix: start from the nominal em box, but grow (never shrink) each edge to
+ * fit `font.bbox` — fontkit's real box enclosing every glyph — so nothing
+ * ever clips. Growing only when a font actually overflows its own em box
+ * keeps well-behaved fonts sized identically to before (and thus still
+ * comparable to each other), instead of normalizing every font to its own
+ * ink extent, which would make font A's glyphs look bigger than font B's
+ * just because A's ink happens to fill less of its em square.
+ */
+function buildGlyphViewBox(font: FontkitFont): GlyphViewBox {
+  const { unitsPerEm, ascent, descent, bbox } = font;
+  const left = Math.min(0, bbox.minX);
+  const right = Math.max(unitsPerEm, bbox.maxX);
+  const bottom = Math.min(descent, bbox.minY);
+  const top = Math.max(ascent, bbox.maxY);
+
+  const boxWidth = right - left;
+  const boxHeight = top - bottom;
+  const padding = Math.max(boxWidth, boxHeight) * VIEWBOX_PADDING_RATIO;
+
+  return {
+    // Flipped to SVG's downward-y space (see the `scale(1, -1)` below): a
+    // font-space point (x, y) renders at (x, -y), so the box's y-range
+    // becomes [-top, -bottom].
+    minX: left - padding,
+    minY: -top - padding,
+    width: boxWidth + padding * 2,
+    height: boxHeight + padding * 2,
+  };
+}
+
 function GlyphCellView({
   cell,
   glyphPadding,
-  unitsPerEm,
-  ascent,
+  viewBox,
 }: {
-  ascent: number;
   cell: GlyphCell;
   glyphPadding: string;
-  unitsPerEm: number;
+  viewBox: GlyphViewBox;
 }) {
   return (
     <div
@@ -166,9 +214,9 @@ function GlyphCellView({
         <svg
           aria-hidden="true"
           className={`h-full w-full ${glyphPadding} text-primary`}
-          viewBox={`0 0 ${unitsPerEm} ${unitsPerEm}`}
+          viewBox={`${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`}
         >
-          <g transform={`translate(0, ${ascent}) scale(1, -1)`}>
+          <g transform="scale(1, -1)">
             <path d={cell.pathData} fill="currentColor" />
           </g>
         </svg>
@@ -191,27 +239,24 @@ function GlyphCellView({
 }
 
 function GlyphCellGrid({
-  ascent,
   cells,
   cellMinWidth,
   glyphPadding,
-  unitsPerEm,
+  viewBox,
 }: {
-  ascent: number;
   cellMinWidth: number;
   cells: GlyphCell[];
   glyphPadding: string;
-  unitsPerEm: number;
+  viewBox: GlyphViewBox;
 }) {
   return (
     <Grid columns={{ minWidth: cellMinWidth, repeat: "fill" }} gap={0}>
       {cells.map((cell) => (
         <GlyphCellView
-          ascent={ascent}
           cell={cell}
           glyphPadding={glyphPadding}
           key={cell.codePoint}
-          unitsPerEm={unitsPerEm}
+          viewBox={viewBox}
         />
       ))}
     </Grid>
@@ -228,7 +273,7 @@ export default function GlyphGrid({
     () => (groupByCategory ? groupCells(cells) : null),
     [cells, groupByCategory]
   );
-  const { unitsPerEm, ascent } = font;
+  const viewBox = useMemo(() => buildGlyphViewBox(font), [font]);
   const glyphPadding = cellMinWidth <= 72 ? "p-1.5" : "p-2.5";
 
   if (grouped) {
@@ -261,11 +306,10 @@ export default function GlyphGrid({
                       </Text>
                     )}
                     <GlyphCellGrid
-                      ascent={ascent}
                       cellMinWidth={cellMinWidth}
                       cells={scriptGroup.cells}
                       glyphPadding={glyphPadding}
-                      unitsPerEm={unitsPerEm}
+                      viewBox={viewBox}
                     />
                   </VStack>
                 ))}
@@ -279,11 +323,10 @@ export default function GlyphGrid({
 
   return (
     <GlyphCellGrid
-      ascent={ascent}
       cellMinWidth={cellMinWidth}
       cells={cells}
       glyphPadding={glyphPadding}
-      unitsPerEm={unitsPerEm}
+      viewBox={viewBox}
     />
   );
 }
