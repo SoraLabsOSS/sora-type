@@ -13,7 +13,7 @@ import { Tab, TabList } from "@astryxdesign/core/TabList";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Token } from "@astryxdesign/core/Token";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { buildComparisonMatrix } from "@/lib/font-compare";
 import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
 
@@ -220,9 +220,16 @@ export default function CompareView() {
     []
   );
 
+  // Guards against out-of-order async resolution: dropping a second file
+  // into the same slot before the first has finished parsing could
+  // otherwise let the stale first result overwrite the newer one.
+  const loadTokens = useRef<Record<Slot, number>>({ left: 0, right: 0 });
+
   const handleFile = useCallback(
     async (slot: Slot, selected: File | File[] | null) => {
       const next = Array.isArray(selected) ? selected[0] : selected;
+      const token = ++loadTokens.current[slot];
+
       if (!next) {
         clearFontFace(slot);
         updateSlot(slot, { ...EMPTY_SLOT });
@@ -235,6 +242,9 @@ export default function CompareView() {
         const font = openFont(buffer);
         const cssFontFamily = toCssFontFamily(slot, next.name);
         await loadFontFace(cssFontFamily, cssFontFamily, buffer);
+        if (loadTokens.current[slot] !== token) {
+          return;
+        }
         updateSlot(slot, {
           file: next,
           font,
@@ -250,6 +260,9 @@ export default function CompareView() {
           isLoading: false,
         });
       } catch (err) {
+        if (loadTokens.current[slot] !== token) {
+          return;
+        }
         updateSlot(slot, {
           ...EMPTY_SLOT,
           error: err instanceof Error ? err.message : "Could not parse font",

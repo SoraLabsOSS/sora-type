@@ -82,13 +82,30 @@ function lineWrap(parts: string[], lineStart: string, indent = 4): string {
   return result;
 }
 
+/**
+ * fontkit's `type` only distinguishes the outer wrapper (sfnt vs WOFF vs
+ * WOFF2), not the inner outline format — an sfnt-wrapped font is `"TTF"`
+ * whether it has TrueType (`glyf`) or PostScript (`CFF `) outlines. Check
+ * the table list to pick the right CSS `format()` hint for the latter.
+ */
+function cssFormatHint(metadata: FontMetadata): string {
+  switch (metadata.format) {
+    case "WOFF2":
+      return "woff2";
+    case "WOFF":
+      return "woff";
+    default:
+      return metadata.tables.includes("CFF ") ? "opentype" : "truetype";
+  }
+}
+
 function buildFontFace(
   metadata: FontMetadata,
   options: StylesheetOptions
 ): string {
   const lines = [
     `  font-family: "${metadata.familyName}";`,
-    `  src: url("${options.fileName}");`,
+    `  src: url("${options.fileName}") format("${cssFormatHint(metadata)}");`,
   ];
 
   const wght = metadata.variationAxes.find((axis) => axis.tag === "wght");

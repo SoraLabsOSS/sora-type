@@ -13,20 +13,26 @@ import {
   ToggleButtonGroup,
 } from "@astryxdesign/core/ToggleButton";
 import type { Font as FontkitFont } from "fontkit";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Layers } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { OtToHtmlLangEntry } from "@/data/ot-to-html-lang";
+import { getColorPalettes, hasColorPalettes } from "@/lib/font-color-palettes";
+import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import type { FontMetadata } from "@/lib/font-metadata";
 import { getNamedInstances } from "@/lib/font-variable-instances";
 
 const DEFAULT_TESTER_TEXT =
   "The quick brown fox jumps over the lazy dog. 0123456789";
 const DEFAULT_FONT_SIZE = 32;
+const TESTER_PALETTE_CLASS = "sora-tester-palette-preview";
 
 type TextAlign = "center" | "justify" | "left" | "right";
 
 interface FontInspectorTesterProps {
   cssFontFamily: string | null;
   font: FontkitFont;
+  languageSystems: OtToHtmlLangEntry[];
+  languages: LanguageSupportResult[];
   metadata: FontMetadata;
 }
 
@@ -37,14 +43,110 @@ function buildVariationSettings(values: Record<string, number>): string {
   return parts.join(", ");
 }
 
+interface LanguageAndPaletteRowProps {
+  language: string | null;
+  languageSystems: OtToHtmlLangEntry[];
+  languages: LanguageSupportResult[];
+  paletteIndex: number | null;
+  palettes: ReturnType<typeof getColorPalettes>;
+  setLanguage: (value: string | null) => void;
+  setPaletteIndex: (value: number | null) => void;
+}
+
+function LanguageAndPaletteRow({
+  language,
+  languages,
+  languageSystems,
+  paletteIndex,
+  palettes,
+  setLanguage,
+  setPaletteIndex,
+}: LanguageAndPaletteRowProps) {
+  // Some languages have multiple orthographies (e.g. distinct scripts) that
+  // share the same ISO 639-3 code; since the `lang` attribute only cares
+  // about the code, keep just the first entry per code to avoid duplicate
+  // option values.
+  const uniqueLanguages = useMemo(() => {
+    const seen = new Set<string>();
+    return languages.filter((lang) => {
+      if (seen.has(lang.code)) {
+        return false;
+      }
+      seen.add(lang.code);
+      return true;
+    });
+  }, [languages]);
+
+  // languageSystems uses BCP-47-ish codes/English names from a different
+  // registry than the ISO 639-3 codes here, so there's no reliable code-based
+  // join — matching by lowercased English name is a reasonable heuristic for
+  // an advisory badge, not an exact cross-reference.
+  const layoutDeclaredNames = useMemo(
+    () => new Set(languageSystems.map((entry) => entry.name.toLowerCase())),
+    [languageSystems]
+  );
+  const hasLayoutDeclared = layoutDeclaredNames.size > 0;
+
+  if (languages.length === 0 && palettes.length === 0) {
+    return null;
+  }
+
+  return (
+    <HStack gap={3}>
+      {uniqueLanguages.length > 0 && (
+        <Selector
+          description={
+            hasLayoutDeclared
+              ? "Layers icon = this font's GSUB/GPOS layout tables declare explicit support for that language."
+              : undefined
+          }
+          hasClear
+          label="Language"
+          onChange={setLanguage}
+          options={uniqueLanguages.map((lang) => ({
+            value: lang.code,
+            label: `${lang.name} (${lang.code})`,
+            icon: layoutDeclaredNames.has(lang.name.toLowerCase()) ? (
+              <Layers size={14} />
+            ) : undefined,
+          }))}
+          placeholder="None"
+          value={language}
+        />
+      )}
+      {palettes.length > 0 && (
+        <Selector
+          hasClear
+          label="Color palette"
+          onChange={(value) =>
+            setPaletteIndex(value === null ? null : Number(value))
+          }
+          options={palettes.map((p) => ({
+            value: String(p.index),
+            label: p.name
+              ? `${p.name} (Palette ${p.index})`
+              : `Palette ${p.index}`,
+          }))}
+          placeholder="Default"
+          value={paletteIndex === null ? null : String(paletteIndex)}
+        />
+      )}
+    </HStack>
+  );
+}
+
 export function FontInspectorTester({
   cssFontFamily,
   font,
+  languages,
+  languageSystems,
   metadata,
 }: FontInspectorTesterProps) {
   const [text, setText] = useState(DEFAULT_TESTER_TEXT);
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
   const [textAlign, setTextAlign] = useState<TextAlign>("left");
+  const [language, setLanguage] = useState<string | null>(null);
+  const [paletteIndex, setPaletteIndex] = useState<number | null>(null);
   const [axisValues, setAxisValues] = useState<Record<string, number>>(() =>
     Object.fromEntries(
       metadata.variationAxes.map((axis) => [axis.tag, axis.default])
@@ -56,6 +158,15 @@ export function FontInspectorTester({
   const [autoOpticalSizing, setAutoOpticalSizing] = useState(true);
   const [showInstancePreviews, setShowInstancePreviews] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const palettes = useMemo(
+    () => (hasColorPalettes(font) ? getColorPalettes(font) : []),
+    [font]
+  );
+  const palette = useMemo(
+    () => palettes.find((p) => p.index === paletteIndex) ?? null,
+    [palettes, paletteIndex]
+  );
 
   const namedInstances = useMemo(() => getNamedInstances(font), [font]);
   const activeInstanceName = useMemo(() => {
@@ -105,6 +216,9 @@ export function FontInspectorTester({
     const instance = namedInstances.find((entry) => entry.name === name);
     if (instance) {
       setAxisValues((prev) => ({ ...prev, ...instance.values }));
+      if ("opsz" in instance.values) {
+        setAutoOpticalSizing(false);
+      }
     }
   };
 
@@ -129,6 +243,16 @@ export function FontInspectorTester({
               <ToggleButton label="Justify" value="justify" />
             </ToggleButtonGroup>
           </HStack>
+
+          <LanguageAndPaletteRow
+            language={language}
+            languageSystems={languageSystems}
+            languages={languages}
+            paletteIndex={paletteIndex}
+            palettes={palettes}
+            setLanguage={setLanguage}
+            setPaletteIndex={setPaletteIndex}
+          />
 
           <VStack gap={2}>
             <HStack
@@ -157,11 +281,14 @@ export function FontInspectorTester({
             />
           </VStack>
 
-          <div
-            className="w-full rounded-md border border-border bg-body px-4 py-3 text-primary outline-none focus-visible:border-accent"
-            contentEditable
+          {palette && (
+            <style>{`@font-palette-values --${TESTER_PALETTE_CLASS} {\n  font-family: "${metadata.familyName}";\n  base-palette: ${palette.index};\n}\n.${TESTER_PALETTE_CLASS} {\n  font-palette: --${TESTER_PALETTE_CLASS};\n}`}</style>
+          )}
+          <textarea
+            className={`w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors focus-visible:border-accent ${palette ? TESTER_PALETTE_CLASS : ""}`}
             dir="auto"
-            onInput={(event) => setText(event.currentTarget.textContent ?? "")}
+            lang={language ?? undefined}
+            onChange={(event) => setText(event.target.value)}
             spellCheck={false}
             style={{
               fontFamily: cssFontFamily ?? "inherit",
@@ -172,10 +299,8 @@ export function FontInspectorTester({
               minHeight: "8.5rem",
               textAlign,
             }}
-            suppressContentEditableWarning
-          >
-            {text}
-          </div>
+            value={text}
+          />
         </VStack>
       </Card>
 

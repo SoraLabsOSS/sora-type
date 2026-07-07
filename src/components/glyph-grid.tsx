@@ -42,12 +42,22 @@ interface CategoryGroup {
 
 // Cap glyph count for v1 so a large CJK font doesn't render tens of
 // thousands of SVGs at once; revisit with virtualization if needed.
-const MAX_GLYPHS = 500;
+export const MAX_GLYPHS = 500;
 const CONTROL_CHAR_CUTOFF = 0x20;
 // Key for the "no specific script" bucket within a subcategory (e.g. digits,
 // punctuation) — kept out of GlyphCell/script's public `null` so it can be a
 // plain Map key.
 const NO_SCRIPT_KEY = "";
+
+/**
+ * Number of distinct Unicode codepoints this font maps via cmap — the true
+ * ceiling for what the grid below can ever display. Distinct from
+ * `metadata.numGlyphs` (total glyf/CFF glyph count), which includes
+ * unencoded glyphs (ligatures, alternates, composites) the grid never shows.
+ */
+export function getEncodedCodePointCount(font: FontkitFont): number {
+  return [...font.characterSet].filter((cp) => cp > CONTROL_CHAR_CUTOFF).length;
+}
 
 function buildGlyphCells(font: FontkitFont): GlyphCell[] {
   const codePoints = [...font.characterSet]

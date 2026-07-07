@@ -4,7 +4,12 @@ import { DeferredAnalytics } from "@/components/analytics-deferred";
 import { AppLinkProvider } from "@/components/app-link-provider";
 import { AppShellLayout } from "@/components/app-shell-layout";
 import { MatchaThemeProvider } from "@/components/theme/theme-provider";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
+import {
+  getMetadataBaseUrl,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 import { themeInitScript } from "@/lib/theme/theme-init-script";
 import "./globals.css";
 import "@/themes/matcha/matcha.css";
@@ -25,6 +30,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getMetadataBaseUrl()),
   title: {
     template: `%s · ${SITE_NAME}`,
     default: SITE_NAME,
@@ -54,9 +60,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     siteName: SITE_NAME,
     type: "website",
+    url: SITE_URL,
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
   },

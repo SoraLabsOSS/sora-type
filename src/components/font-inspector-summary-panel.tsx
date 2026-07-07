@@ -8,20 +8,51 @@ import { HStack, VStack } from "@astryxdesign/core/Layout";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { Text } from "@astryxdesign/core/Text";
 import { DetailRow } from "@/components/font-inspector-fields";
+import type { OtToHtmlLangEntry } from "@/data/ot-to-html-lang";
+import type { AccuracyComparisonResult } from "@/lib/font-benchmark";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import { buildFontDetailFields, type FontMetadata } from "@/lib/font-metadata";
 import type { summarizeSupport } from "@/lib/font-report";
 
 interface FontInspectorSummaryPanelProps {
+  accuracyDiscrepancies: AccuracyComparisonResult[];
   detected: (LanguageSupportResult & { rowKey: string })[];
   fontMetadata: FontMetadata | null;
+  languageSystems: OtToHtmlLangEntry[];
   positioningIssues: (LanguageSupportResult & { rowKey: string })[];
   summary: ReturnType<typeof summarizeSupport> | null;
 }
 
+function LanguageSystemsList({
+  languageSystems,
+}: {
+  languageSystems: OtToHtmlLangEntry[];
+}) {
+  if (languageSystems.length === 0) {
+    return (
+      <Text color="secondary" type="supporting">
+        No language-specific GSUB/GPOS layout tables detected.
+      </Text>
+    );
+  }
+  return (
+    <Text color="secondary" type="supporting">
+      This font's GSUB/GPOS layout tables declare explicit support for:{" "}
+      {languageSystems.map((entry, index) => (
+        <span key={entry.ot}>
+          {entry.name} ({entry.html})
+          {index < languageSystems.length - 1 ? ", " : "."}
+        </span>
+      ))}
+    </Text>
+  );
+}
+
 export function FontInspectorSummaryPanel({
+  accuracyDiscrepancies,
   detected,
   fontMetadata,
+  languageSystems,
   positioningIssues,
   summary,
 }: FontInspectorSummaryPanelProps) {
@@ -58,6 +89,15 @@ export function FontInspectorSummaryPanel({
                   <Text type="body">
                     <b>{summary.none}</b> unsupported
                   </Text>
+                  {accuracyDiscrepancies.length > 0 ? (
+                    <Text color="secondary" type="supporting">
+                      <b>{accuracyDiscrepancies.length}</b> Southeast Asian
+                      language
+                      {accuracyDiscrepancies.length === 1 ? "" : "s"} look
+                      supported by cmap alone but fail mark positioning under
+                      shaping-verified checking.
+                    </Text>
+                  ) : null}
                 </VStack>
               </Collapsible>
             </Card>
@@ -172,6 +212,23 @@ export function FontInspectorSummaryPanel({
                     ) : null}
                   </VStack>
                 ) : null}
+              </Collapsible>
+
+              <Divider variant="subtle" />
+
+              <Collapsible
+                defaultIsOpen={false}
+                trigger={
+                  <Text type="body">
+                    Language systems (
+                    <Text as="span" weight="bold">
+                      {languageSystems.length}
+                    </Text>
+                    )
+                  </Text>
+                }
+              >
+                <LanguageSystemsList languageSystems={languageSystems} />
               </Collapsible>
             </VStack>
           </Card>

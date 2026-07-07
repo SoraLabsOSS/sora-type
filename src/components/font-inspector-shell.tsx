@@ -198,6 +198,19 @@ export function SidebarSkeleton() {
         </VStack>
       </SkeletonCard>
 
+      <Card className="bg-surface" padding={2}>
+        <VStack gap={1}>
+          {DETAIL_SKELETON_KEYS.slice(0, 4).map((key) => (
+            <Skeleton
+              className="w-full"
+              key={key}
+              rounded="sm"
+              style={{ height: skeletonHeights.body }}
+            />
+          ))}
+        </VStack>
+      </Card>
+
       <SkeletonCard>
         <VStack gap={3}>
           <Skeleton

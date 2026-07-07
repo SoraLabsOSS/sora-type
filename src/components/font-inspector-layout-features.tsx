@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { HStack, VStack } from "@astryxdesign/core/Layout";
@@ -15,13 +16,70 @@ import { useMemo, useState } from "react";
 import type { FontMetadata } from "@/lib/font-metadata";
 import { getFeatureAlternateCounts } from "@/lib/opentype-feature-alternates";
 import { isToggleableFeature } from "@/lib/opentype-feature-classification";
-import { getOpenTypeFeatureName } from "@/lib/opentype-feature-names";
+import {
+  getFeatureUiName,
+  getOpenTypeFeatureName,
+} from "@/lib/opentype-feature-names";
 import { createFeatureSampleFinder } from "@/lib/opentype-feature-samples";
 
 const DEFAULT_DEMO_TEXT =
   "The quick brown fox jumps over the lazy dog. 0123456789";
+const ALTERNATE_PREVIEW_CAP = 20;
 
 type FeatureState = "default" | "off" | "on";
+
+interface AlternatePreviewRowProps {
+  alternateCount: number;
+  cssFontFamily: string | null;
+  demoText: string;
+  tag: string;
+}
+
+/** Side-by-side preview of every alternate a feature offers, one box per
+ * `font-feature-settings: "tag" N` value — capped to avoid rendering
+ * hundreds of boxes for decorative fonts with large `aalt` counts. */
+function AlternatePreviewRow({
+  alternateCount,
+  cssFontFamily,
+  demoText,
+  tag,
+}: AlternatePreviewRowProps) {
+  const [expanded, setExpanded] = useState(false);
+  const shown =
+    expanded || alternateCount <= ALTERNATE_PREVIEW_CAP
+      ? alternateCount
+      : ALTERNATE_PREVIEW_CAP;
+
+  return (
+    <VStack gap={2}>
+      <HStack gap={2} style={{ flexWrap: "wrap" }}>
+        {Array.from({ length: shown }, (_, index) => index + 1).map((n) => (
+          <div
+            className="rounded-md border border-border bg-body px-3 py-2 text-primary"
+            key={n}
+            style={{
+              fontFamily: cssFontFamily ?? "inherit",
+              fontFeatureSettings: `"${tag}" ${n}`,
+            }}
+            title={`"${tag}" ${n}`}
+          >
+            {demoText}
+          </div>
+        ))}
+      </HStack>
+      {alternateCount > ALTERNATE_PREVIEW_CAP && (
+        <Button
+          label={
+            expanded ? "Show fewer alternates" : `Show all ${alternateCount}`
+          }
+          onClick={() => setExpanded((prev) => !prev)}
+          size="sm"
+          variant="ghost"
+        />
+      )}
+    </VStack>
+  );
+}
 
 interface FontInspectorLayoutFeaturesProps {
   cssFontFamily: string | null;
@@ -127,7 +185,9 @@ export function FontInspectorLayoutFeatures({
                   <span className="font-mono text-secondary text-xs">
                     {tag}
                   </span>
-                  <Text>{getOpenTypeFeatureName(tag)}</Text>
+                  <Text>
+                    {getFeatureUiName(font, tag) ?? getOpenTypeFeatureName(tag)}
+                  </Text>
                 </HStack>
               ))}
             </VStack>
@@ -171,7 +231,8 @@ export function FontInspectorLayoutFeatures({
                         <span className="font-mono text-secondary text-xs">
                           {tag}
                         </span>{" "}
-                        {getOpenTypeFeatureName(tag)}
+                        {getFeatureUiName(font, tag) ??
+                          getOpenTypeFeatureName(tag)}
                       </Text>
                       <ToggleButtonGroup
                         label={`${tag} state`}
@@ -189,42 +250,42 @@ export function FontInspectorLayoutFeatures({
                     </HStack>
 
                     {alternateCount > 1 && state === "on" && (
-                      <Selector
-                        hasClear={false}
-                        isLabelHidden
-                        label={`${tag} alternate`}
-                        onChange={(value) =>
-                          setAlternateSelection(tag, Number(value))
-                        }
-                        options={Array.from(
-                          { length: alternateCount },
-                          (_, index) => String(index + 1)
-                        )}
-                        value={String(alternate)}
-                      />
+                      <>
+                        <Selector
+                          hasClear={false}
+                          isLabelHidden
+                          label={`${tag} alternate`}
+                          onChange={(value) =>
+                            setAlternateSelection(tag, Number(value))
+                          }
+                          options={Array.from(
+                            { length: alternateCount },
+                            (_, index) => String(index + 1)
+                          )}
+                          value={String(alternate)}
+                        />
+                        <AlternatePreviewRow
+                          alternateCount={alternateCount}
+                          cssFontFamily={cssFontFamily}
+                          demoText={demoText}
+                          tag={tag}
+                        />
+                      </>
                     )}
 
-                    <div
-                      className="w-full rounded-md border border-border bg-body px-4 py-3 text-primary outline-none focus-visible:border-accent"
-                      contentEditable
-                      // Remounts the node whenever the applied feature value
-                      // changes so the browser always reshapes from scratch —
-                      // some engines cache glyph shaping per-node and don't
-                      // reliably re-run it on a bare style-attribute update.
+                    {/* Remount when feature value changes so shaping refreshes reliably. */}
+                    <textarea
+                      className="w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors focus-visible:border-accent"
                       key={featureValue ?? "default"}
-                      onInput={(event) =>
-                        setDemoText(tag, event.currentTarget.textContent ?? "")
-                      }
+                      onChange={(event) => setDemoText(tag, event.target.value)}
                       spellCheck={false}
                       style={{
                         fontFamily: cssFontFamily ?? "inherit",
                         fontFeatureSettings: featureValue ?? undefined,
                         fontSize: 28,
                       }}
-                      suppressContentEditableWarning
-                    >
-                      {demoText}
-                    </div>
+                      value={demoText}
+                    />
 
                     {css && (
                       <HStack

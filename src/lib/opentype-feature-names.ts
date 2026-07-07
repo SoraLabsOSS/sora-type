@@ -87,6 +87,11 @@ for (let n = 1; n <= 20; n++) {
     `Stylistic Set ${n}`;
 }
 
+for (let n = 1; n <= 99; n++) {
+  OPENTYPE_FEATURE_NAMES[`cv${String(n).padStart(2, "0")}`] =
+    `Character Variant ${n}`;
+}
+
 export function getOpenTypeFeatureName(tag: string): string {
   return OPENTYPE_FEATURE_NAMES[tag] ?? tag;
 }
@@ -114,6 +119,24 @@ interface FontWithNameTable {
 }
 
 /**
+ * Resolves a "UI Name ID" (spec range 256+ — shared by feature UI names and
+ * CPAL palette labels alike) through the `name` table's AAT-style
+ * `fontFeatures` bucket, which is where fontkit files any nameID >= 256
+ * regardless of which OpenType structure it's actually labeling.
+ */
+export function resolveNameTableId(
+  font: import("fontkit").Font,
+  nameID: number
+): string | null {
+  const { name } = font as unknown as FontWithNameTable;
+  const names = name?.records?.fontFeatures?.[nameID];
+  if (!names) {
+    return null;
+  }
+  return names.en ?? Object.values(names)[0] ?? null;
+}
+
+/**
  * A font can override the display name of a numbered feature (`ss01`,
  * `cv03`, ...) via its `FeatureParams.nameID` — a "UI Name ID" (spec range
  * 256+) resolved through the `name` table, e.g. "Alternate Numerals" instead
@@ -124,7 +147,7 @@ export function getFeatureUiName(
   font: import("fontkit").Font,
   tag: string
 ): string | null {
-  const { GSUB, name } = font as unknown as FontWithNameTable;
+  const { GSUB } = font as unknown as FontWithNameTable;
   const nameID = GSUB?.featureList.find(
     (entry) => entry.tag === tag && entry.feature.featureParams
   )?.feature.featureParams?.nameID;
@@ -132,9 +155,5 @@ export function getFeatureUiName(
     return null;
   }
 
-  const names = name?.records?.fontFeatures?.[nameID];
-  if (!names) {
-    return null;
-  }
-  return names.en ?? Object.values(names)[0] ?? null;
+  return resolveNameTableId(font, nameID);
 }

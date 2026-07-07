@@ -33,3 +33,56 @@ export function summarizeScripts(
   }
   return `${scripts.slice(0, 6).join(", ")} +${scripts.length - 6} more`;
 }
+
+export interface OneLinerSummaryInput {
+  featureCount: number;
+  isColor: boolean;
+  isHinted: boolean;
+  isVariable: boolean;
+  languageCount: number;
+  outlineFormats: string[];
+}
+
+/** A FontSummary.vue-style natural-language sentence describing this font. */
+export function buildOneLinerSummary({
+  featureCount,
+  isColor,
+  isHinted,
+  isVariable,
+  languageCount,
+  outlineFormats,
+}: OneLinerSummaryInput): string {
+  const traits: string[] = [];
+  if (isHinted) {
+    traits.push("has hinting");
+  }
+  if (outlineFormats.length > 0) {
+    traits.push(`uses ${outlineFormats.join(" + ")} outlines`);
+  }
+  if (isVariable) {
+    traits.push("is a variable font");
+  }
+  if (isColor) {
+    traits.push("has color glyphs");
+  }
+  if (featureCount > 0) {
+    traits.push(
+      `has ${featureCount} OpenType feature${featureCount === 1 ? "" : "s"}`
+    );
+  }
+  if (languageCount > 0) {
+    traits.push(
+      `supports ${languageCount} language${languageCount === 1 ? "" : "s"}`
+    );
+  }
+
+  if (traits.length === 0) {
+    return "";
+  }
+  if (traits.length === 1) {
+    return `This font ${traits[0]}.`;
+  }
+  const last = traits.at(-1);
+  const rest = traits.slice(0, -1);
+  return `This font ${rest.join(", ")}, and ${last}.`;
+}

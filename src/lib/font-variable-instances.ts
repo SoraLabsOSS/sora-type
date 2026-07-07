@@ -6,7 +6,7 @@ interface FvarAxis {
 
 interface FvarInstance {
   coord: number[];
-  name: Record<string, string>;
+  name?: Record<string, string>;
 }
 
 interface FvarTable {
@@ -32,7 +32,13 @@ export function getNamedInstances(font: FontkitFont): NamedVariationInstance[] {
 
   const tags = fvar.axis.map((axis) => axis.axisTag);
   return fvar.instance.map((instance) => ({
-    name: instance.name.en ?? Object.values(instance.name)[0] ?? "Instance",
+    // Some fonts (e.g. Segoe UI Variable's default 400/10.5 instance) have
+    // a nameID whose `name` table entry fontkit can't resolve, leaving
+    // `instance.name` itself undefined rather than an empty name record.
+    name:
+      instance.name?.en ??
+      (instance.name ? Object.values(instance.name)[0] : undefined) ??
+      "Instance",
     values: Object.fromEntries(
       tags.map((tag, index) => [tag, instance.coord[index]])
     ),

@@ -8,7 +8,7 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import type { Font as FontkitFont } from "fontkit";
 import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { FontMetadata } from "@/lib/font-metadata";
+import { getEncodedCodePointCount } from "@/components/glyph-grid";
 import {
   buildPyftsubsetCommand,
   getUnsupportedCodePoints,
@@ -19,7 +19,6 @@ import { computeUnicodeRanges } from "@/lib/unicode-ranges";
 interface FontInspectorSubsettingProps {
   fileName: string;
   font: FontkitFont;
-  metadata: FontMetadata;
 }
 
 const FILE_EXTENSION = /\.[^./]+$/;
@@ -31,7 +30,6 @@ function toHex(codePoint: number): string {
 export function FontInspectorSubsetting({
   fileName,
   font,
-  metadata,
 }: FontInspectorSubsettingProps) {
   const [text, setText] = useState("");
   const [copiedRanges, setCopiedRanges] = useState(false);
@@ -48,9 +46,11 @@ export function FontInspectorSubsetting({
   );
 
   const usedCount = usedCodePoints.size;
+  const supportedUsedCount = usedCount - unsupportedCodePoints.length;
+  const encodedCodePointCount = getEncodedCodePointCount(font);
   const percentUsed =
-    metadata.numGlyphs > 0
-      ? Math.min(100, (usedCount / metadata.numGlyphs) * 100)
+    encodedCodePointCount > 0
+      ? Math.min(100, (supportedUsedCount / encodedCodePointCount) * 100)
       : 0;
 
   const outputFileName = `${fileName.replace(FILE_EXTENSION, "")}-subset.woff2`;
@@ -79,15 +79,13 @@ export function FontInspectorSubsetting({
             ready command to cut the rest.
           </Text>
 
-          <div
-            className="min-h-32 w-full rounded-md border border-border bg-body px-4 py-3 text-primary outline-none focus-visible:border-accent"
-            contentEditable
-            onInput={(event) => setText(event.currentTarget.textContent ?? "")}
+          <textarea
+            className="min-h-32 w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors placeholder:text-secondary focus-visible:border-accent"
+            onChange={(event) => setText(event.target.value)}
+            placeholder="Paste your site copy here…"
             spellCheck={false}
-            suppressContentEditableWarning
-          >
-            {text}
-          </div>
+            value={text}
+          />
           {text.length === 0 && (
             <Text color="secondary" type="supporting">
               Nothing pasted yet — the stats below reflect an empty selection.
@@ -99,15 +97,15 @@ export function FontInspectorSubsetting({
       <Card className="bg-surface" padding={4}>
         <VStack gap={2}>
           <Text>
-            <strong className="tabular-nums">{usedCount}</strong> of{" "}
+            <strong className="tabular-nums">{supportedUsedCount}</strong> of{" "}
             <strong className="tabular-nums">
-              {metadata.numGlyphs.toLocaleString()}
+              {encodedCodePointCount.toLocaleString()}
             </strong>{" "}
-            glyphs used
+            characters used
             {usedCount > 0 && (
               <span className="text-secondary">
                 {" "}
-                (~{percentUsed.toFixed(1)}% of the font)
+                (~{percentUsed.toFixed(1)}% of the font's character set)
               </span>
             )}
           </Text>

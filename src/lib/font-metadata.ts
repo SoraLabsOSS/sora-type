@@ -39,12 +39,14 @@ export interface FontMetadata {
   fileName: string;
   format: FontkitFont["type"];
   fullName: string;
+  isHinted: boolean;
   license: string | null;
   licenseUrl: string | null;
   manufacturer: string | null;
   metrics: FontMetricsSummary;
   numGlyphs: number;
   openTypeFeatures: string[];
+  outlineFormats: string[];
   postscriptName: string;
   style: string;
   tables: string[];
@@ -93,6 +95,16 @@ function readName(font: FontkitFont, key: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * A font can author its own recommended preview sentence via the `name`
+ * table's nameID 19 ("Sample text") — e.g. a display face might ship
+ * "Handcrafted Lettering" instead of a generic pangram. Used to seed the
+ * Preview/Tester default text when present.
+ */
+export function getFontSampleText(font: FontkitFont): string | null {
+  return readName(font, "sampleText");
+}
+
 function formatWeightClass(weightClass: number): string {
   const label = WEIGHT_LABELS[weightClass];
   if (label) {
@@ -130,14 +142,52 @@ export function summarizeEmbedding(
   return "Installable embedding allowed";
 }
 
+function getRawTableTags(font: FontkitFont): Record<string, unknown> {
+  return (
+    (
+      font as FontkitFont & {
+        directory?: { tables?: Record<string, unknown> };
+      }
+    ).directory?.tables ?? {}
+  );
+}
+
 function getTableTags(font: FontkitFont): string[] {
-  const tables = (
-    font as FontkitFont & { directory?: { tables?: Record<string, unknown> } }
-  ).directory?.tables;
-  if (!tables) {
-    return [];
+  return Object.keys(getRawTableTags(font)).toSorted();
+}
+
+// A handful of Google Fonts ship a `prep` table containing only this fixed
+// instruction sequence as a build-tool artifact, not real hinting — see
+// https://github.com/googlefonts/fontbakery/issues/3076.
+const SIMPLE_PREP_PROGRAM = [184, 1, 255, 133, 176, 4, 141].toString();
+const HINTING_TABLE_TAGS = ["cvt ", "cvar", "fpgm", "hdmx", "VDMX"];
+
+/** Whether this font ships any of the "helper tables" hinted fonts use. */
+function isHinted(font: FontkitFont): boolean {
+  const tables = getRawTableTags(font);
+  if (HINTING_TABLE_TAGS.some((tag) => tag in tables)) {
+    return true;
   }
-  return Object.keys(tables).toSorted();
+  const prep = (
+    font as FontkitFont & { prep?: { controlValueProgram: number[] } }
+  ).prep;
+  return Boolean(
+    prep && prep.controlValueProgram.toString() !== SIMPLE_PREP_PROGRAM
+  );
+}
+
+const OUTLINE_TABLE_NAMES: Record<string, string> = {
+  "CFF ": "OpenType CFF",
+  CFF2: "OpenType CFF2",
+  glyf: "TrueType glyf",
+};
+
+/** Glyph outline format(s) this font uses (CFF/CFF2 vs. TrueType glyf). */
+function getOutlineFormats(font: FontkitFont): string[] {
+  const tables = getRawTableTags(font);
+  return Object.entries(OUTLINE_TABLE_NAMES)
+    .filter(([tag]) => tag in tables)
+    .map(([, name]) => name);
 }
 
 function getVariationAxes(font: FontkitFont): FontVariationAxisSummary[] {
@@ -162,19 +212,29 @@ export function extractFontMetadata(
   font: FontkitFont,
   fileName: string
 ): FontMetadata {
-  const os2 = font["OS/2"];
-  const embedding: FontEmbeddingPermissions = {
-    noEmbedding: os2.fsType.noEmbedding,
-    viewOnly: os2.fsType.viewOnly,
-    editable: os2.fsType.editable,
-    noSubsetting: os2.fsType.noSubsetting,
-    bitmapOnly: os2.fsType.bitmapOnly,
-  };
+  const os2 = font["OS/2"] as FontkitFont["OS/2"] | undefined;
+  const embedding: FontEmbeddingPermissions = os2
+    ? {
+        noEmbedding: os2.fsType.noEmbedding,
+        viewOnly: os2.fsType.viewOnly,
+        editable: os2.fsType.editable,
+        noSubsetting: os2.fsType.noSubsetting,
+        bitmapOnly: os2.fsType.bitmapOnly,
+      }
+    : {
+        noEmbedding: false,
+        viewOnly: false,
+        editable: false,
+        noSubsetting: false,
+        bitmapOnly: false,
+      };
 
   const versionFromName = readName(font, "version");
   const version =
     versionFromName ??
-    (font.version ? String(font.version).trim() || null : null);
+    (font.version !== undefined && font.version !== null
+      ? String(font.version).trim() || null
+      : null);
 
   return {
     fileName,
@@ -194,10 +254,12 @@ export function extractFontMetadata(
     license: readName(font, "license"),
     licenseUrl: readName(font, "licenseURL"),
     numGlyphs: font.numGlyphs,
-    weightClass: os2.usWeightClass,
-    weightLabel: formatWeightClass(os2.usWeightClass),
-    widthClass: os2.usWidthClass,
-    widthLabel: formatWidthClass(os2.usWidthClass),
+    isHinted: isHinted(font),
+    outlineFormats: getOutlineFormats(font),
+    weightClass: os2?.usWeightClass ?? 400,
+    weightLabel: formatWeightClass(os2?.usWeightClass ?? 400),
+    widthClass: os2?.usWidthClass ?? 5,
+    widthLabel: formatWidthClass(os2?.usWidthClass ?? 5),
     embedding,
     embeddingSummary: summarizeEmbedding(embedding),
     metrics: {

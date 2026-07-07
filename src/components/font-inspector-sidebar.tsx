@@ -8,6 +8,7 @@ import { List, ListItem } from "@astryxdesign/core/List";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import type { InspectorView } from "@/components/font-inspector";
 import {
+  buildOneLinerSummary,
   DetailRow,
   summarizeScripts,
 } from "@/components/font-inspector-fields";
@@ -28,6 +29,7 @@ interface LoadedFontSummary {
 interface FontInspectorSidebarProps {
   detected: (LanguageSupportResult & { rowKey: string })[];
   fontMetadata: FontMetadata | null;
+  hasColor: boolean;
   isExporting: boolean;
   isPlaceholder: boolean;
   loadedFont: LoadedFontSummary | null;
@@ -41,6 +43,7 @@ const INSPECTOR_VIEWS: { label: string; value: InspectorView }[] = [
   { label: "Raw tables", value: "raw-tables" },
   { label: "Tester", value: "tester" },
   { label: "Layout Features", value: "layout-features" },
+  { label: "Color", value: "color" },
   { label: "CSS", value: "css" },
   { label: "Subsetting", value: "subsetting" },
 ];
@@ -48,6 +51,7 @@ const INSPECTOR_VIEWS: { label: string; value: InspectorView }[] = [
 export function FontInspectorSidebar({
   detected,
   fontMetadata,
+  hasColor,
   isExporting,
   isPlaceholder,
   loadedFont,
@@ -59,6 +63,19 @@ export function FontInspectorSidebar({
   const summaryFields = fontMetadata
     ? buildFontSummaryFields(fontMetadata, scriptSummary)
     : [];
+  const oneLinerSummary = fontMetadata
+    ? buildOneLinerSummary({
+        featureCount: fontMetadata.openTypeFeatures.length,
+        isColor: hasColor,
+        isHinted: fontMetadata.isHinted,
+        isVariable: fontMetadata.variationAxes.length > 0,
+        languageCount: detected.length,
+        outlineFormats: fontMetadata.outlineFormats,
+      })
+    : "";
+  const inspectorViews = hasColor
+    ? INSPECTOR_VIEWS
+    : INSPECTOR_VIEWS.filter((option) => option.value !== "color");
 
   return (
     <VStack className="min-h-0" gap={4}>
@@ -83,12 +100,30 @@ export function FontInspectorSidebar({
                 />
                 <Badge label={fontMetadata.weightLabel} variant="neutral" />
               </HStack>
+              {oneLinerSummary ? (
+                <Text color="secondary" type="supporting">
+                  {oneLinerSummary}
+                </Text>
+              ) : null}
               {isPlaceholder ? (
                 <Text color="secondary" type="supporting">
                   Example font — upload yours to inspect it.
                 </Text>
               ) : null}
             </VStack>
+          </Card>
+
+          <Card className="bg-surface" padding={2}>
+            <List className="gap-1" density="compact">
+              {inspectorViews.map((option) => (
+                <ListItem
+                  isSelected={option.value === view}
+                  key={option.value}
+                  label={option.label}
+                  onClick={() => onViewChange(option.value)}
+                />
+              ))}
+            </List>
           </Card>
 
           <Card className="bg-surface" padding={4}>
@@ -108,20 +143,20 @@ export function FontInspectorSidebar({
             </VStack>
           </Card>
         </VStack>
-      ) : null}
-
-      <Card className="bg-surface" padding={2}>
-        <List className="gap-1" density="compact">
-          {INSPECTOR_VIEWS.map((option) => (
-            <ListItem
-              isSelected={option.value === view}
-              key={option.value}
-              label={option.label}
-              onClick={() => onViewChange(option.value)}
-            />
-          ))}
-        </List>
-      </Card>
+      ) : (
+        <Card className="bg-surface" padding={2}>
+          <List className="gap-1" density="compact">
+            {inspectorViews.map((option) => (
+              <ListItem
+                isSelected={option.value === view}
+                key={option.value}
+                label={option.label}
+                onClick={() => onViewChange(option.value)}
+              />
+            ))}
+          </List>
+        </Card>
+      )}
 
       <div className="mt-auto">
         <Button

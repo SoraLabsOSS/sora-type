@@ -6,7 +6,8 @@ import { Section } from "@astryxdesign/core/Section";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { ToggleButton } from "@astryxdesign/core/ToggleButton";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FontInspectorColor } from "@/components/font-inspector-color";
 import { FontInspectorLayoutFeatures } from "@/components/font-inspector-layout-features";
 import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
 import {
@@ -23,12 +24,24 @@ import {
   INSPECTOR_FONT_ACCEPT,
   InspectorFontUpload,
 } from "@/components/font-inspector-upload";
-import GlyphGrid from "@/components/glyph-grid";
+import GlyphGrid, {
+  getEncodedCodePointCount,
+  MAX_GLYPHS,
+} from "@/components/glyph-grid";
+import type { OtToHtmlLangEntry } from "@/data/ot-to-html-lang";
+import type { AccuracyComparisonResult } from "@/lib/font-benchmark";
+import { compareAccuracy } from "@/lib/font-benchmark";
+import { isColorFont } from "@/lib/font-color-palettes";
 import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import { reportAllLanguages } from "@/lib/font-language-detection";
-import { extractFontMetadata, type FontMetadata } from "@/lib/font-metadata";
+import {
+  extractFontMetadata,
+  type FontMetadata,
+  getFontSampleText,
+} from "@/lib/font-metadata";
 import { summarizeSupport } from "@/lib/font-report";
+import { getLanguageSystems } from "@/lib/opentype-language-systems";
 
 const FILE_EXTENSION = /\.[^./]+$/;
 const INSPECTOR_FONT_SLOT = "inspector";
@@ -45,6 +58,7 @@ const INSPECTOR_GRID_CLASS =
   "grid grid-cols-1 gap-4 max-lg:min-h-min max-lg:flex-none lg:min-h-0 lg:flex-1 lg:h-full lg:grid-cols-[280px_minmax(0,1fr)_minmax(240px,280px)] lg:overflow-hidden";
 
 export type InspectorView =
+  | "color"
   | "css"
   | "layout-features"
   | "overview"
@@ -86,6 +100,35 @@ function openFont(buffer: ArrayBuffer): FontkitFont {
 const PLACEHOLDER_FONT_URL = "/fonts/8894d4fc112b8f24-s.p.woff2";
 const PLACEHOLDER_FONT_NAME = "8894d4fc112b8f24-s.p.woff2";
 
+function RawTablesViewContent({ font }: { font: FontkitFont | null }) {
+  if (!font) {
+    return (
+      <Text color="secondary" type="supporting">
+        Load a font to inspect its raw tables.
+      </Text>
+    );
+  }
+  return <FontInspectorRawTables font={font} />;
+}
+
+function ColorViewContent({ font }: { font: FontkitFont | null }) {
+  if (!font) {
+    return (
+      <Text color="secondary" type="supporting">
+        Load a font to inspect its color glyphs.
+      </Text>
+    );
+  }
+  return <FontInspectorColor font={font} />;
+}
+
+function buildGlyphsCaption(encodedCodePointCount: number): string {
+  if (encodedCodePointCount > MAX_GLYPHS) {
+    return `Showing the first ${MAX_GLYPHS} of ${encodedCodePointCount.toLocaleString()} characters. Hover a cell for its Unicode code point.`;
+  }
+  return "Showing every character this font maps. Hover a cell for its Unicode code point.";
+}
+
 export default function FontInspector() {
   const [file, setFile] = useState<File | null>(null);
   const [loadedFont, setLoadedFont] = useState<LoadedFont | null>(null);
@@ -94,8 +137,18 @@ export default function FontInspector() {
   const [fontMetadata, setFontMetadata] = useState<FontMetadata | null>(null);
   const [cssFontFamily, setCssFontFamily] = useState<string | null>(null);
   const [languages, setLanguages] = useState<LanguageSupportResult[]>([]);
+  const [accuracyDiscrepancies, setAccuracyDiscrepancies] = useState<
+    AccuracyComparisonResult[]
+  >([]);
+  const [languageSystems, setLanguageSystems] = useState<OtToHtmlLangEntry[]>(
+    []
+  );
   const [previewFontSize, setPreviewFontSize] = useState(DEFAULT_FONT_SIZE);
   const [previewText, setPreviewText] = useState("");
+  // Tracks whether the current previewText was auto-filled from the font's
+  // own nameID 19 ("Sample text"), so swapping fonts refreshes it but typing
+  // a custom preview sticks across font swaps.
+  const autoFilledPreviewTextRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPlaceholder, setIsPlaceholder] = useState(false);
@@ -118,6 +171,18 @@ export default function FontInspector() {
       setFontBuffer(buffer);
       setFontMetadata(extractFontMetadata(openedFont, fileName));
       setLanguages(reportAllLanguages(openedFont, buffer));
+      setAccuracyDiscrepancies(
+        compareAccuracy(openedFont, buffer).filter((r) => r.discrepancy)
+      );
+      setLanguageSystems(getLanguageSystems(openedFont));
+
+      const sampleText = getFontSampleText(openedFont) ?? "";
+      setPreviewText((current) =>
+        current === "" || current === autoFilledPreviewTextRef.current
+          ? sampleText
+          : current
+      );
+      autoFilledPreviewTextRef.current = sampleText;
     },
     []
   );
@@ -134,6 +199,8 @@ export default function FontInspector() {
       setFontBuffer(null);
       setFontMetadata(null);
       setLanguages([]);
+      setAccuracyDiscrepancies([]);
+      setLanguageSystems([]);
       setCssFontFamily(null);
       setIsPlaceholder(false);
     }
@@ -193,6 +260,8 @@ export default function FontInspector() {
         setFontBuffer(null);
         setFontMetadata(null);
         setLanguages([]);
+        setAccuracyDiscrepancies([]);
+        setLanguageSystems([]);
         setCssFontFamily(null);
         setError(err instanceof Error ? err.message : "Could not parse font");
       } finally {
@@ -215,6 +284,8 @@ export default function FontInspector() {
         setFontBuffer(null);
         setFontMetadata(null);
         setLanguages([]);
+        setAccuracyDiscrepancies([]);
+        setLanguageSystems([]);
         setCssFontFamily(null);
         setError(err instanceof Error ? err.message : "Could not parse font");
       }
@@ -260,6 +331,7 @@ export default function FontInspector() {
   const positioningIssues = keyedLanguages.filter(
     (language) => language.support === "positioning-failed"
   );
+  const hasColor = Boolean(font && isColorFont(font));
 
   return (
     <Section className={INSPECTOR_SECTION_CLASS} padding={4}>
@@ -268,6 +340,7 @@ export default function FontInspector() {
           <FontInspectorSidebar
             detected={detected}
             fontMetadata={fontMetadata}
+            hasColor={hasColor}
             isExporting={isExporting}
             isPlaceholder={isPlaceholder}
             loadedFont={loadedFont}
@@ -279,15 +352,17 @@ export default function FontInspector() {
 
         {view === "raw-tables" && (
           <div
+            className={`flex min-h-0 flex-col lg:col-span-2 lg:min-h-0 ${COLUMN_SCROLL_CLASS}`}
+          >
+            <RawTablesViewContent font={font} />
+          </div>
+        )}
+
+        {view === "color" && (
+          <div
             className={`flex min-h-0 flex-col lg:col-span-2 lg:h-full lg:overflow-hidden ${COLUMN_SCROLL_CLASS}`}
           >
-            {font ? (
-              <FontInspectorRawTables font={font} />
-            ) : (
-              <Text color="secondary" type="supporting">
-                Load a font to inspect its raw tables.
-              </Text>
-            )}
+            <ColorViewContent font={font} />
           </div>
         )}
 
@@ -299,6 +374,9 @@ export default function FontInspector() {
               <FontInspectorTester
                 cssFontFamily={cssFontFamily}
                 font={font}
+                key={`${fontMetadata.fileName}-${fontMetadata.postscriptName}`}
+                languageSystems={languageSystems}
+                languages={detected}
                 metadata={fontMetadata}
               />
             ) : (
@@ -353,7 +431,6 @@ export default function FontInspector() {
               <FontInspectorSubsetting
                 fileName={loadedFont.fileName}
                 font={font}
-                metadata={fontMetadata}
               />
             ) : (
               <Text color="secondary" type="supporting">
@@ -396,7 +473,8 @@ export default function FontInspector() {
                     <VStack gap={2}>
                       <HStack align="center" gap={2} justify="between">
                         <Heading className="font-sans" level={3}>
-                          Glyphs ({loadedFont.numGlyphs.toLocaleString()})
+                          Glyphs (
+                          {getEncodedCodePointCount(font).toLocaleString()})
                         </Heading>
                         <ToggleButton
                           isPressed={groupGlyphsByCategory}
@@ -406,8 +484,7 @@ export default function FontInspector() {
                         />
                       </HStack>
                       <Text color="secondary" type="supporting">
-                        Showing the first 500 glyphs. Hover a cell for its
-                        Unicode code point.
+                        {buildGlyphsCaption(getEncodedCodePointCount(font))}
                       </Text>
                       <GlyphGrid
                         cellMinWidth={GLYPH_CELL_MIN_WIDTH}
@@ -422,8 +499,10 @@ export default function FontInspector() {
 
             <aside className={`flex flex-col ${COLUMN_SCROLL_CLASS}`}>
               <FontInspectorSummaryPanel
+                accuracyDiscrepancies={accuracyDiscrepancies}
                 detected={detected}
                 fontMetadata={fontMetadata}
+                languageSystems={languageSystems}
                 positioningIssues={positioningIssues}
                 summary={summary}
               />
