@@ -9,14 +9,54 @@ interface GsubLigature {
   components: number[];
 }
 
+interface GsubClassDef {
+  classRangeRecord?: { class: number; end: number; start: number }[];
+  classValueArray?: number[];
+  glyphCount?: number;
+  startGlyph?: number;
+}
+
+interface GsubChainRule {
+  backtrack: number[];
+  input: number[];
+  lookahead: number[];
+}
+
+// `chainRuleSets`/`chainClassSet` and each of their entries are plain
+// `r.Array`s in fontkit (unlike `alternateSet`/`ligatureSets`, which are
+// `r.LazyArray`s needing `.get()`) — so this is a plain nested array.
+type GsubChainRuleSets = GsubChainRule[][];
+
+interface GsubChainingContext {
+  backtrackClassDef?: GsubClassDef;
+  backtrackCoverage?: GsubCoverage[];
+  chainClassSet?: GsubChainRuleSets;
+  chainRuleSets?: GsubChainRuleSets;
+  coverage?: GsubCoverage;
+  inputClassDef?: GsubClassDef;
+  inputCoverage?: GsubCoverage[];
+  lookaheadClassDef?: GsubClassDef;
+  lookaheadCoverage?: GsubCoverage[];
+  version?: number;
+}
+
 interface GsubSubtable {
   alternateSet?: { get(index: number): number[] };
+  backtrackClassDef?: GsubClassDef;
+  backtrackCoverage?: GsubCoverage[];
+  chainClassSet?: GsubChainRuleSets;
+  chainRuleSets?: GsubChainRuleSets;
   coverage?: GsubCoverage;
   deltaGlyphID?: number;
   extension?: GsubSubtable;
+  inputClassDef?: GsubClassDef;
+  inputCoverage?: GsubCoverage[];
   ligatureSets?: { get(index: number): GsubLigature[] };
+  lookaheadClassDef?: GsubClassDef;
+  lookaheadCoverage?: GsubCoverage[];
   sequences?: unknown;
   substitute?: unknown;
+  version?: number;
 }
 
 interface GsubLookup {
@@ -34,6 +74,12 @@ interface GsubTable {
 }
 
 const MAX_SAMPLES_PER_FEATURE = 20;
+// Caps each of backtrack/input/lookahead before pairing them up into demo
+// strings — a few representative combinations are plenty for a live-typing
+// demo box, and this is what actually prevents the combinatorial blow-up
+// (e.g. 20 backtrack x 20 input x 20 lookahead = 8000 combinations) that the
+// reference engine guards against with its own capacity/display caps.
+const MAX_CONTEXTUAL_COMBINATIONS = 5;
 
 function coverageGlyphs(coverage: GsubCoverage): number[] {
   if (coverage.glyphs) {
@@ -107,6 +153,201 @@ function collectSimpleSamples(
   }
 }
 
+/** Every glyph a ClassDef assigns to a nonzero class — used as a coarse
+ * "pool" of glyphs relevant to a class-based chaining rule (format 2).
+ * Mirrors the reference engine's own simplification: it doesn't try to
+ * match specific rules to specific classes, just reports which glyphs are
+ * classified at all. */
+function glyphsFromClassDef(classDef: GsubClassDef | undefined): number[] {
+  if (!classDef) {
+    return [];
+  }
+  if (classDef.classValueArray) {
+    const start = classDef.startGlyph ?? 0;
+    return classDef.classValueArray
+      .map((value, index) => (value > 0 ? start + index : null))
+      .filter((glyph): glyph is number => glyph !== null);
+  }
+  const glyphs: number[] = [];
+  for (const record of classDef.classRangeRecord ?? []) {
+    for (let glyph = record.start; glyph <= record.end; glyph++) {
+      glyphs.push(glyph);
+    }
+  }
+  return glyphs;
+}
+
+function charsFor(
+  glyphs: number[],
+  charFor: Map<number, string>,
+  limit: number
+): string[] {
+  const chars: string[] = [];
+  for (const glyph of glyphs) {
+    const char = charFor.get(glyph);
+    if (char) {
+      chars.push(char);
+      if (chars.length >= limit) {
+        break;
+      }
+    }
+  }
+  return chars;
+}
+
+/** Pairs up (capped) backtrack/input/lookahead character pools into a
+ * handful of concrete demo strings, e.g. "T A" for a rule that only fires
+ * with a lookahead, or "fiT" for one needing both context sides. */
+function addContextualCombinations(
+  inputChars: string[],
+  backtrackChars: string[],
+  lookaheadChars: string[],
+  samples: Set<string>
+): void {
+  const inputs = inputChars.slice(0, MAX_CONTEXTUAL_COMBINATIONS);
+  const backtracks = backtrackChars.slice(0, MAX_CONTEXTUAL_COMBINATIONS);
+  const lookaheads = lookaheadChars.slice(0, MAX_CONTEXTUAL_COMBINATIONS);
+
+  if (backtracks.length === 0 && lookaheads.length === 0) {
+    for (const input of inputs) {
+      samples.add(input);
+    }
+    return;
+  }
+
+  const prefixes = backtracks.length > 0 ? backtracks : [""];
+  const suffixes = lookaheads.length > 0 ? lookaheads : [""];
+
+  outer: for (const prefix of prefixes) {
+    for (const input of inputs) {
+      for (const suffix of suffixes) {
+        samples.add(`${prefix}${input}${suffix}`);
+        if (samples.size >= MAX_SAMPLES_PER_FEATURE) {
+          break outer;
+        }
+      }
+    }
+  }
+}
+
+/** Format 1 (glyph-based): `chainRuleSets` is parallel to `coverage` — the
+ * i-th covered glyph is the rule's first input glyph, `rule.input` holds
+ * the rest. */
+function collectFormat1Samples(
+  subtable: GsubChainingContext,
+  charFor: Map<number, string>,
+  samples: Set<string>
+): void {
+  const coverageGlyphIds = coverageGlyphs(subtable.coverage ?? {});
+  coverageGlyphIds.forEach((firstGlyph, index) => {
+    const rules = subtable.chainRuleSets?.[index];
+    for (const rule of rules ?? []) {
+      const inputChars = charsFor(
+        [firstGlyph, ...rule.input],
+        charFor,
+        MAX_CONTEXTUAL_COMBINATIONS
+      );
+      const backtrackChars = charsFor(
+        rule.backtrack,
+        charFor,
+        MAX_CONTEXTUAL_COMBINATIONS
+      );
+      const lookaheadChars = charsFor(
+        rule.lookahead,
+        charFor,
+        MAX_CONTEXTUAL_COMBINATIONS
+      );
+      addContextualCombinations(
+        inputChars,
+        backtrackChars,
+        lookaheadChars,
+        samples
+      );
+    }
+  });
+}
+
+/** Format 2 (class-based): treats every glyph assigned to any nonzero
+ * input/backtrack/lookahead class as a flat "pool", same simplification the
+ * reference engine uses — precise per-rule class matching isn't worth the
+ * complexity for a demo sample. */
+function collectFormat2Samples(
+  subtable: GsubChainingContext,
+  charFor: Map<number, string>,
+  samples: Set<string>
+): void {
+  const inputChars = charsFor(
+    glyphsFromClassDef(subtable.inputClassDef),
+    charFor,
+    MAX_SAMPLES_PER_FEATURE
+  );
+  const backtrackChars = charsFor(
+    glyphsFromClassDef(subtable.backtrackClassDef),
+    charFor,
+    MAX_CONTEXTUAL_COMBINATIONS
+  );
+  const lookaheadChars = charsFor(
+    glyphsFromClassDef(subtable.lookaheadClassDef),
+    charFor,
+    MAX_CONTEXTUAL_COMBINATIONS
+  );
+  addContextualCombinations(
+    inputChars,
+    backtrackChars,
+    lookaheadChars,
+    samples
+  );
+}
+
+/** Format 3 (coverage-based): each position (backtrack/input/lookahead) is
+ * its own flat Coverage table — no rule sets to walk. */
+function collectFormat3Samples(
+  subtable: GsubChainingContext,
+  charFor: Map<number, string>,
+  samples: Set<string>
+): void {
+  const inputChars = (subtable.inputCoverage ?? []).flatMap((coverage) =>
+    charsFor(coverageGlyphs(coverage), charFor, MAX_CONTEXTUAL_COMBINATIONS)
+  );
+  const backtrackChars = (subtable.backtrackCoverage ?? []).flatMap(
+    (coverage) =>
+      charsFor(coverageGlyphs(coverage), charFor, MAX_CONTEXTUAL_COMBINATIONS)
+  );
+  const lookaheadChars = (subtable.lookaheadCoverage ?? []).flatMap(
+    (coverage) =>
+      charsFor(coverageGlyphs(coverage), charFor, MAX_CONTEXTUAL_COMBINATIONS)
+  );
+  addContextualCombinations(
+    inputChars,
+    backtrackChars,
+    lookaheadChars,
+    samples
+  );
+}
+
+/** Lookup type 6 (Chained Contextual Substitution) — the mechanism behind
+ * `calt`, `rlig`, `clig`, `jalt`, `rclt`, and often `frac`/`dnom`/`numr`.
+ * Ported from the reference engine's `lookup-parsers/type6.js`, adapted to
+ * fontkit's own field names (see `node_modules/fontkit/src/tables/opentype.js`,
+ * `ChainingContext`). Deliberately doesn't build the full
+ * backtrack x input x lookahead cross product — `addContextualCombinations`
+ * caps each side before pairing, which is what actually prevents the
+ * combinatorial blow-up a naive port would hit on real fonts.
+ */
+function collectChainingContextSamples(
+  subtable: GsubChainingContext,
+  charFor: Map<number, string>,
+  samples: Set<string>
+): void {
+  if (subtable.version === 1) {
+    collectFormat1Samples(subtable, charFor, samples);
+  } else if (subtable.version === 2) {
+    collectFormat2Samples(subtable, charFor, samples);
+  } else if (subtable.version === 3) {
+    collectFormat3Samples(subtable, charFor, samples);
+  }
+}
+
 function collectSamples(
   subtable: GsubSubtable,
   charFor: Map<number, string>,
@@ -114,6 +355,16 @@ function collectSamples(
 ): void {
   // Lookup type 7 (Extension Substitution) wraps the real subtable.
   const resolved = subtable.extension ?? subtable;
+
+  if (
+    resolved.chainRuleSets ||
+    resolved.chainClassSet ||
+    resolved.inputCoverage
+  ) {
+    collectChainingContextSamples(resolved, charFor, samples);
+    return;
+  }
+
   const coverage = resolved.coverage;
   if (!coverage) {
     return;
