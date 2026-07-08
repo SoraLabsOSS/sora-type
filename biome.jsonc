@@ -31,6 +31,27 @@
       }
     },
     {
+      "includes": ["apps/extension/**"],
+      "javascript": {
+        "globals": [
+          "browser",
+          "defineBackground",
+          "defineContentScript",
+          "defineContentScriptUi",
+          "defineUnlistedScript",
+          "defineWxtPlugin",
+          "defineAppConfig"
+        ]
+      },
+      "linter": {
+        "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["apps/web/src/app/test/page.tsx"],
       "linter": {
         "rules": {
