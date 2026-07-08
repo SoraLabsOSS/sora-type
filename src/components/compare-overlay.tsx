@@ -3,6 +3,7 @@
 import { Card } from "@astryxdesign/core/Card";
 import { Grid } from "@astryxdesign/core/Grid";
 import { HStack, VStack } from "@astryxdesign/core/Layout";
+import { Switch } from "@astryxdesign/core/Switch";
 import { Text } from "@astryxdesign/core/Text";
 import type { Font as FontkitFont } from "fontkit";
 import { useMemo, useState } from "react";
@@ -109,15 +110,64 @@ function parseOverlayChars(input: string): string[] {
   return chars.slice(0, MAX_OVERLAY_CHARS);
 }
 
+interface FontMetricLine {
+  label: string;
+  value: number;
+}
+
+/**
+ * x-height/cap-height only — baseline (0) is drawn once, shared by both
+ * fonts, since it's the same y regardless of each font's own metrics.
+ */
+function fontMetricLines(font: FontkitFont): FontMetricLine[] {
+  return [
+    { label: "x-height", value: font.xHeight },
+    { label: "Cap height", value: font.capHeight },
+  ];
+}
+
+function MetricGuideLines({
+  colorClass,
+  font,
+  scale,
+  viewBox,
+}: {
+  colorClass: string;
+  font: FontkitFont;
+  scale: number;
+  viewBox: OverlayViewBox;
+}) {
+  const x1 = viewBox.minX;
+  const x2 = viewBox.minX + viewBox.width;
+  return (
+    <>
+      {fontMetricLines(font).map((metric) => (
+        <line
+          className={colorClass}
+          key={metric.label}
+          strokeDasharray="4 3"
+          strokeWidth={1}
+          x1={x1}
+          x2={x2}
+          y1={-metric.value * scale}
+          y2={-metric.value * scale}
+        />
+      ))}
+    </>
+  );
+}
+
 function OverlayCell({
   char,
   left,
   right,
+  showMetricGuides,
   viewBox,
 }: {
   char: string;
   left: FontkitFont | null;
   right: FontkitFont | null;
+  showMetricGuides: boolean;
   viewBox: OverlayViewBox;
 }) {
   const codePoint = char.codePointAt(0) ?? 0;
@@ -143,6 +193,32 @@ function OverlayCell({
           role="img"
           viewBox={`${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`}
         >
+          {showMetricGuides ? (
+            <line
+              className="stroke-border"
+              strokeWidth={1}
+              x1={viewBox.minX}
+              x2={viewBox.minX + viewBox.width}
+              y1={0}
+              y2={0}
+            />
+          ) : null}
+          {showMetricGuides && left ? (
+            <MetricGuideLines
+              colorClass="stroke-blue-vivid"
+              font={left}
+              scale={leftScale}
+              viewBox={viewBox}
+            />
+          ) : null}
+          {showMetricGuides && right ? (
+            <MetricGuideLines
+              colorClass="stroke-red-vivid"
+              font={right}
+              scale={rightScale}
+              viewBox={viewBox}
+            />
+          ) : null}
           {leftPath ? (
             <g
               className="fill-blue-vivid opacity-60"
@@ -185,6 +261,7 @@ export function CompareOverlay({
   right: FontkitFont | null;
 }) {
   const [input, setInput] = useState(DEFAULT_OVERLAY_TEXT);
+  const [showMetricGuides, setShowMetricGuides] = useState(true);
   const chars = useMemo(() => parseOverlayChars(input), [input]);
   const viewBox = useMemo(
     () => buildOverlayViewBox(left, right, chars),
@@ -220,6 +297,12 @@ export function CompareOverlay({
               </Text>
             </HStack>
           </HStack>
+          <Switch
+            description="Dashed lines mark each font's own x-height and cap-height; the solid line is the shared baseline."
+            label="Show metric guides"
+            onChange={setShowMetricGuides}
+            value={showMetricGuides}
+          />
         </VStack>
       </Card>
 
@@ -237,6 +320,7 @@ export function CompareOverlay({
               key={char}
               left={left}
               right={right}
+              showMetricGuides={showMetricGuides}
               viewBox={viewBox}
             />
           ))}

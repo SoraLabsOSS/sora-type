@@ -35,6 +35,7 @@ export interface FontMetadata {
   designerUrl: string | null;
   embedding: FontEmbeddingPermissions;
   embeddingSummary: string;
+  familyClassification: FontFamilyClassification;
   familyName: string;
   fileName: string;
   format: FontkitFont["type"];
@@ -59,6 +60,24 @@ export interface FontMetadata {
   widthClass: number;
   widthLabel: string;
 }
+
+export type FontFamilyClassification =
+  | "decorative"
+  | "sans-serif"
+  | "script"
+  | "serif"
+  | "unknown";
+
+export const FAMILY_CLASSIFICATION_LABELS: Record<
+  FontFamilyClassification,
+  string
+> = {
+  serif: "Serif",
+  "sans-serif": "Sans-serif",
+  script: "Script",
+  decorative: "Decorative",
+  unknown: "Unknown",
+};
 
 const NAME_LANG = "en";
 
@@ -190,6 +209,33 @@ function getOutlineFormats(font: FontkitFont): string[] {
     .map(([, name]) => name);
 }
 
+/**
+ * Reads the OS/2 `panose` byte array (bFamilyType, bSerifStyle, ...) — a
+ * classification the font's own author encodes, so this needs no glyph
+ * outline analysis. Many fonts leave it unset (all zeros), which is why
+ * "unknown" is a real, common outcome rather than a theoretical fallback.
+ */
+function classifyPanose(
+  panose: number[] | undefined
+): FontFamilyClassification {
+  const [familyType, serifStyle] = panose ?? [];
+  if (familyType === 2) {
+    // Latin Text/Display — bSerifStyle 0/1 mean Any/No Fit (unset), 11-15
+    // are the sans-serif variants, everything else in 2-10 has a real serif.
+    if (serifStyle === undefined || serifStyle <= 1) {
+      return "unknown";
+    }
+    return serifStyle >= 11 && serifStyle <= 15 ? "sans-serif" : "serif";
+  }
+  if (familyType === 3) {
+    return "script";
+  }
+  if (familyType === 4) {
+    return "decorative";
+  }
+  return "unknown";
+}
+
 function getVariationAxes(font: FontkitFont): FontVariationAxisSummary[] {
   return Object.entries(font.variationAxes ?? {})
     .flatMap(([tag, axis]) =>
@@ -260,6 +306,7 @@ export function extractFontMetadata(
     weightLabel: formatWeightClass(os2?.usWeightClass ?? 400),
     widthClass: os2?.usWidthClass ?? 5,
     widthLabel: formatWidthClass(os2?.usWidthClass ?? 5),
+    familyClassification: classifyPanose(os2?.panose),
     embedding,
     embeddingSummary: summarizeEmbedding(embedding),
     metrics: {
@@ -324,6 +371,12 @@ export function buildFontDetailFields(
     { label: "Format", value: metadata.format },
     { label: "Weight", value: metadata.weightLabel },
     { label: "Width", value: metadata.widthLabel },
+    metadata.familyClassification === "unknown"
+      ? null
+      : {
+          label: "Classification",
+          value: FAMILY_CLASSIFICATION_LABELS[metadata.familyClassification],
+        },
     { label: "Embedding", value: metadata.embeddingSummary },
     metadata.designer ? { label: "Designer", value: metadata.designer } : null,
     metadata.manufacturer

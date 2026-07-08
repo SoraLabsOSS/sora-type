@@ -6,7 +6,8 @@ import { Section } from "@astryxdesign/core/Section";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { ToggleButton } from "@astryxdesign/core/ToggleButton";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontInspectorColor } from "@/components/font-inspector-color";
 import { FontInspectorLayoutFeatures } from "@/components/font-inspector-layout-features";
 import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
@@ -100,6 +101,28 @@ function openFont(buffer: ArrayBuffer): FontkitFont {
 const PLACEHOLDER_FONT_URL = "/fonts/8894d4fc112b8f24-s.p.woff2";
 const PLACEHOLDER_FONT_NAME = "8894d4fc112b8f24-s.p.woff2";
 
+/**
+ * Only http(s) is allowed for `?inspectUrl=` — this value flows straight into
+ * `fetch()`, so a `data:`/`javascript:` (or other) scheme from an untrusted
+ * query param must never reach it.
+ */
+function parseInspectUrl(raw: string | null): URL | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const url = new URL(raw);
+    return url.protocol === "http:" || url.protocol === "https:" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function fileNameFromUrl(url: URL): string {
+  const last = url.pathname.split("/").filter(Boolean).at(-1);
+  return last && last.length > 0 ? last : "font";
+}
+
 function RawTablesViewContent({ font }: { font: FontkitFont | null }) {
   if (!font) {
     return (
@@ -130,6 +153,12 @@ function buildGlyphsCaption(encodedCodePointCount: number): string {
 }
 
 export default function FontInspector() {
+  const searchParams = useSearchParams();
+  const inspectUrlParam = searchParams.get("inspectUrl");
+  const inspectUrl = useMemo(
+    () => parseInspectUrl(inspectUrlParam),
+    [inspectUrlParam]
+  );
   const [file, setFile] = useState<File | null>(null);
   const [loadedFont, setLoadedFont] = useState<LoadedFont | null>(null);
   const [font, setFont] = useState<FontkitFont | null>(null);
@@ -210,9 +239,44 @@ export default function FontInspector() {
     }
   }, [loadFontFromBuffer]);
 
+  const loadFromUrl = useCallback(
+    async (url: URL) => {
+      setIsPlaceholder(false);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(url, { mode: "cors" });
+        if (!response.ok) {
+          throw new Error(`Could not fetch font (${response.status})`);
+        }
+        const buffer = await response.arrayBuffer();
+        loadFontFromBuffer(fileNameFromUrl(url), buffer);
+      } catch {
+        setLoadedFont(null);
+        setFont(null);
+        setFontBuffer(null);
+        setFontMetadata(null);
+        setLanguages([]);
+        setAccuracyDiscrepancies([]);
+        setLanguageSystems([]);
+        setCssFontFamily(null);
+        setError(
+          "Could not load font from that URL — the source may block cross-origin requests. Try downloading the file and dropping it here instead."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loadFontFromBuffer]
+  );
+
   useEffect(() => {
+    if (inspectUrl) {
+      loadFromUrl(inspectUrl);
+      return;
+    }
     loadPlaceholder();
-  }, [loadPlaceholder]);
+  }, [inspectUrl, loadFromUrl, loadPlaceholder]);
 
   useEffect(() => {
     if (!(fontBuffer && loadedFont)) {

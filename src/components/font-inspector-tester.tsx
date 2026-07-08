@@ -19,7 +19,10 @@ import type { OtToHtmlLangEntry } from "@/data/ot-to-html-lang";
 import { getColorPalettes, hasColorPalettes } from "@/lib/font-color-palettes";
 import type { LanguageSupportResult } from "@/lib/font-language-detection";
 import type { FontMetadata } from "@/lib/font-metadata";
-import { getNamedInstances } from "@/lib/font-variable-instances";
+import {
+  buildVariationSettings,
+  getNamedInstances,
+} from "@/lib/font-variable-instances";
 
 const DEFAULT_TESTER_TEXT =
   "The quick brown fox jumps over the lazy dog. 0123456789";
@@ -34,13 +37,6 @@ interface FontInspectorTesterProps {
   languageSystems: OtToHtmlLangEntry[];
   languages: LanguageSupportResult[];
   metadata: FontMetadata;
-}
-
-function buildVariationSettings(values: Record<string, number>): string {
-  const parts = Object.entries(values).map(
-    ([tag, value]) => `"${tag}" ${value}`
-  );
-  return parts.join(", ");
 }
 
 interface LanguageAndPaletteRowProps {

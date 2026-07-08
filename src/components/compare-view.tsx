@@ -6,6 +6,7 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { FileInput } from "@astryxdesign/core/FileInput";
 import { Grid, GridSpan } from "@astryxdesign/core/Grid";
 import { HStack, VStack } from "@astryxdesign/core/Layout";
+import { NumberInput } from "@astryxdesign/core/NumberInput";
 import { Section } from "@astryxdesign/core/Section";
 import { Slider } from "@astryxdesign/core/Slider";
 import { Switch } from "@astryxdesign/core/Switch";
@@ -13,17 +14,19 @@ import { Tab, TabList } from "@astryxdesign/core/TabList";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Token } from "@astryxdesign/core/Token";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompareCharacters } from "@/components/compare-characters";
 import { CompareCss } from "@/components/compare-css";
 import { CompareData } from "@/components/compare-data";
 import { CompareFeatures } from "@/components/compare-features";
 import { CompareOverlay } from "@/components/compare-overlay";
+import { ComparePairing } from "@/components/compare-pairing";
 import { CompareWaterfall } from "@/components/compare-waterfall";
 import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
 import { buildComparisonMatrix } from "@/lib/font-compare";
 import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
 import { extractFontMetadata, type FontMetadata } from "@/lib/font-metadata";
+import { buildVariationSettings } from "@/lib/font-variable-instances";
 
 type Slot = "left" | "right";
 type TabValue =
@@ -34,6 +37,7 @@ type TabValue =
   | "css"
   | "overlay"
   | "data"
+  | "pairing"
   | "about";
 
 interface SlotMeta {
@@ -97,6 +101,7 @@ const TABS: { label: string; value: TabValue }[] = [
   { value: "css", label: "CSS" },
   { value: "overlay", label: "Overlay" },
   { value: "data", label: "Data" },
+  { value: "pairing", label: "Pairing" },
   { value: "about", label: "About Compare" },
 ];
 
@@ -182,26 +187,91 @@ function CompareEmptyPanel() {
   );
 }
 
+function ComparisonColumnAxes({
+  axisValues,
+  metadata,
+  onAxisChange,
+}: {
+  axisValues: Record<string, number>;
+  metadata: FontMetadata;
+  onAxisChange: (tag: string, value: number) => void;
+}) {
+  if (metadata.variationAxes.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <Divider variant="subtle" />
+      <VStack gap={3}>
+        <Text color="secondary" type="supporting">
+          Variable axes
+        </Text>
+        {metadata.variationAxes.map((axis) => (
+          <VStack gap={1} key={axis.tag}>
+            <HStack
+              gap={3}
+              style={{ alignItems: "center", justifyContent: "space-between" }}
+            >
+              <Text color="secondary" type="supporting">
+                {axis.name} ({axis.tag})
+              </Text>
+              <NumberInput
+                isLabelHidden
+                label={axis.name}
+                max={axis.max}
+                min={axis.min}
+                onChange={(value) =>
+                  value !== null && onAxisChange(axis.tag, value)
+                }
+                step={axis.max - axis.min <= 1 ? 0.01 : 1}
+                value={axisValues[axis.tag] ?? axis.default}
+                width={96}
+              />
+            </HStack>
+            <Slider
+              formatValue={(value) => String(value)}
+              isLabelHidden
+              label={axis.name}
+              max={axis.max}
+              min={axis.min}
+              onChange={(value: number) => onAxisChange(axis.tag, value)}
+              step={axis.max - axis.min <= 1 ? 0.01 : 1}
+              value={axisValues[axis.tag] ?? axis.default}
+            />
+          </VStack>
+        ))}
+      </VStack>
+    </>
+  );
+}
+
 function ComparisonColumn({
+  axisValues,
   fontSize,
   lineHeight,
+  metadata,
   normalLineHeight,
+  onAxisChange,
   onFontSizeChange,
   onLineHeightChange,
   slot,
   state,
   text,
 }: {
+  axisValues: Record<string, number>;
   fontSize: number;
   lineHeight: number;
+  metadata: FontMetadata | null;
   normalLineHeight: boolean;
+  onAxisChange: (slot: Slot, tag: string, value: number) => void;
   onFontSizeChange: (slot: Slot, value: number) => void;
   onLineHeightChange: (slot: Slot, value: number) => void;
   slot: Slot;
   state: FontSlotState;
   text: string;
 }) {
-  if (!(state.font && state.meta && state.cssFontFamily)) {
+  if (!(state.font && state.meta && state.cssFontFamily && metadata)) {
     return (
       <Card height="100%" minHeight={240} padding={4}>
         <Text color="secondary" type="supporting">
@@ -210,6 +280,8 @@ function ComparisonColumn({
       </Card>
     );
   }
+
+  const variationSettings = buildVariationSettings(axisValues);
 
   return (
     <Card height="100%" minHeight={240} padding={4}>
@@ -245,6 +317,12 @@ function ComparisonColumn({
           />
         </VStack>
 
+        <ComparisonColumnAxes
+          axisValues={axisValues}
+          metadata={metadata}
+          onAxisChange={(tag, value) => onAxisChange(slot, tag, value)}
+        />
+
         <Divider variant="subtle" />
 
         <VStack gap={2}>
@@ -256,6 +334,7 @@ function ComparisonColumn({
             style={{
               fontFamily: state.cssFontFamily,
               fontSize,
+              fontVariationSettings: variationSettings || undefined,
               lineHeight: normalLineHeight ? "normal" : lineHeight,
             }}
             type="body"
@@ -281,6 +360,19 @@ export default function CompareView() {
   const [syncSliders, setSyncSliders] = useState(false);
   const [normalLineHeight, setNormalLineHeight] = useState(false);
   const [customText, setCustomText] = useState("");
+  const [axisValues, setAxisValues] = useState<
+    Record<Slot, Record<string, number>>
+  >({ left: {}, right: {} });
+
+  const handleAxisChange = useCallback(
+    (slot: Slot, tag: string, value: number) => {
+      setAxisValues((prev) => ({
+        ...prev,
+        [slot]: { ...prev[slot], [tag]: value },
+      }));
+    },
+    []
+  );
   const [localFontPickerKeys, setLocalFontPickerKeys] = useState<
     Record<Slot, number>
   >({ left: 0, right: 0 });
@@ -467,6 +559,33 @@ export default function CompareView() {
     [slots.right.font, slots.right.meta]
   );
 
+  // Resets each slot's axis sliders to the newly loaded font's defaults —
+  // otherwise a stale value from the previous font (e.g. "wght": 900) could
+  // sit outside the new font's axis range or reference a tag it doesn't have.
+  useEffect(() => {
+    setAxisValues((prev) => ({
+      ...prev,
+      left: Object.fromEntries(
+        (leftMetadata?.variationAxes ?? []).map((axis) => [
+          axis.tag,
+          axis.default,
+        ])
+      ),
+    }));
+  }, [leftMetadata]);
+
+  useEffect(() => {
+    setAxisValues((prev) => ({
+      ...prev,
+      right: Object.fromEntries(
+        (rightMetadata?.variationAxes ?? []).map((axis) => [
+          axis.tag,
+          axis.default,
+        ])
+      ),
+    }));
+  }, [rightMetadata]);
+
   const leftFontSlot = useMemo(
     () =>
       buildFontSlot(
@@ -578,9 +697,11 @@ export default function CompareView() {
 
         <CompareTabPanels
           activeTab={activeTab}
+          axisValues={axisValues}
           canPreview={canPreview}
           comparisonMatrix={comparisonMatrix}
           customText={customText}
+          handleAxisChange={handleAxisChange}
           handleFontSizeChange={handleFontSizeChange}
           handleLineHeightChange={handleLineHeightChange}
           leftFontSlot={leftFontSlot}
@@ -603,13 +724,17 @@ export default function CompareView() {
 }
 
 function TextTabPanel({
+  axisValues,
   canPreview,
+  handleAxisChange,
   handleFontSizeChange,
   handleLineHeightChange,
   leftLineHeight,
+  leftMetadata,
   leftSize,
   normalLineHeight,
   rightLineHeight,
+  rightMetadata,
   rightSize,
   setNormalLineHeight,
   setSyncSliders,
@@ -617,13 +742,17 @@ function TextTabPanel({
   syncSliders,
   text,
 }: {
+  axisValues: Record<Slot, Record<string, number>>;
   canPreview: boolean;
+  handleAxisChange: (slot: Slot, tag: string, value: number) => void;
   handleFontSizeChange: (slot: Slot, value: number) => void;
   handleLineHeightChange: (slot: Slot, value: number) => void;
   leftLineHeight: number;
+  leftMetadata: FontMetadata | null;
   leftSize: number;
   normalLineHeight: boolean;
   rightLineHeight: number;
+  rightMetadata: FontMetadata | null;
   rightSize: number;
   setNormalLineHeight: (value: boolean) => void;
   setSyncSliders: (value: boolean) => void;
@@ -654,9 +783,12 @@ function TextTabPanel({
         <Grid columns={COMPARE_GRID_COLUMNS} gap={4} style={COMPARE_GRID_STYLE}>
           <GridSpan columns={1}>
             <ComparisonColumn
+              axisValues={axisValues.left}
               fontSize={leftSize}
               lineHeight={leftLineHeight}
+              metadata={leftMetadata}
               normalLineHeight={normalLineHeight}
+              onAxisChange={handleAxisChange}
               onFontSizeChange={handleFontSizeChange}
               onLineHeightChange={handleLineHeightChange}
               slot="left"
@@ -666,9 +798,12 @@ function TextTabPanel({
           </GridSpan>
           <GridSpan columns={1}>
             <ComparisonColumn
+              axisValues={axisValues.right}
               fontSize={rightSize}
               lineHeight={rightLineHeight}
+              metadata={rightMetadata}
               normalLineHeight={normalLineHeight}
+              onAxisChange={handleAxisChange}
               onFontSizeChange={handleFontSizeChange}
               onLineHeightChange={handleLineHeightChange}
               slot="right"
@@ -703,8 +838,11 @@ function AboutTabPanel() {
           ready-to-use stylesheet for each font. <b>Overlay</b> superimposes one
           glyph from both fonts so you can see shape differences directly.{" "}
           <b>Data</b> compares metadata, metrics, variable axes, and language
-          support, highlighting where the two fonts differ. Type your own text
-          above to use it in Text and Waterfall.
+          support, highlighting where the two fonts differ. <b>Pairing</b>{" "}
+          compares x-height, weight, and width between the two fonts and
+          explains what the difference will look like — it doesn't tell you if
+          the pairing is good. Type your own text above to use it in Text and
+          Waterfall.
         </Text>
       </VStack>
     </Card>
@@ -741,9 +879,11 @@ function GlyphLevelTabPanel({
 
 function CompareTabPanels({
   activeTab,
+  axisValues,
   canPreview,
   comparisonMatrix,
   customText,
+  handleAxisChange,
   handleFontSizeChange,
   handleLineHeightChange,
   leftFontSlot,
@@ -761,9 +901,11 @@ function CompareTabPanels({
   syncSliders,
 }: {
   activeTab: TabValue;
+  axisValues: Record<Slot, Record<string, number>>;
   canPreview: boolean;
   comparisonMatrix: ReturnType<typeof buildComparisonMatrix> | null;
   customText: string;
+  handleAxisChange: (slot: Slot, tag: string, value: number) => void;
   handleFontSizeChange: (slot: Slot, value: number) => void;
   handleLineHeightChange: (slot: Slot, value: number) => void;
   leftFontSlot: CompareFontSlot | null;
@@ -785,13 +927,17 @@ function CompareTabPanels({
   if (activeTab === "text") {
     return (
       <TextTabPanel
+        axisValues={axisValues}
         canPreview={canPreview}
+        handleAxisChange={handleAxisChange}
         handleFontSizeChange={handleFontSizeChange}
         handleLineHeightChange={handleLineHeightChange}
         leftLineHeight={leftLineHeight}
+        leftMetadata={leftMetadata}
         leftSize={leftSize}
         normalLineHeight={normalLineHeight}
         rightLineHeight={rightLineHeight}
+        rightMetadata={rightMetadata}
         rightSize={rightSize}
         setNormalLineHeight={setNormalLineHeight}
         setSyncSliders={setSyncSliders}
@@ -845,6 +991,10 @@ function CompareTabPanels({
         </Text>
       </Card>
     );
+  }
+
+  if (activeTab === "pairing") {
+    return <ComparePairing left={leftFontSlot} right={rightFontSlot} />;
   }
 
   return <AboutTabPanel />;

@@ -19,6 +19,12 @@ export interface NamedVariationInstance {
   values: Record<string, number>;
 }
 
+export function buildVariationSettings(values: Record<string, number>): string {
+  return Object.entries(values)
+    .map(([tag, value]) => `"${tag}" ${value}`)
+    .join(", ");
+}
+
 /**
  * Reads the `fvar` table's named instances directly (same pattern as
  * font-metadata.ts reading `font["OS/2"]`) — fontkit's public `Font` type
