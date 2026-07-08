@@ -224,6 +224,7 @@ export function FontInspectorLayoutFeatures({
                       gap={3}
                       style={{
                         alignItems: "center",
+                        flexWrap: "wrap",
                         justifyContent: "space-between",
                       }}
                     >

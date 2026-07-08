@@ -73,6 +73,13 @@ const EMPTY_SLOT: FontSlotState = {
 const DEFAULT_FONT_SIZE = 14;
 const DEFAULT_LINE_HEIGHT = 1.5;
 const COMPARE_GRID_COLUMNS = { minWidth: 320, max: 2 } as const;
+// Grid's minWidth math can force a track wider than the viewport on narrow
+// screens (min > computed max collapses to a fixed 320px track). Overriding
+// with CSS min() keeps the same 1-or-2-column behavior without ever
+// exceeding the container width.
+const COMPARE_GRID_STYLE = {
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
+} as const;
 const COMPARE_SECTION_CLASS = [
   "flex min-h-0 flex-1 flex-col",
   "max-lg:flex-none max-lg:overflow-visible",
@@ -432,7 +439,7 @@ export default function CompareView() {
   const canPreview = leftReady || rightReady;
 
   return (
-    <Section className={COMPARE_SECTION_CLASS} padding={6}>
+    <Section className={COMPARE_SECTION_CLASS} padding={4}>
       <VStack className="pb-4" gap={6} style={{ width: "100%" }}>
         <VStack gap={1}>
           <Heading className="font-sans" level={1}>
@@ -444,7 +451,7 @@ export default function CompareView() {
           </Text>
         </VStack>
 
-        <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
+        <Grid columns={COMPARE_GRID_COLUMNS} gap={4} style={COMPARE_GRID_STYLE}>
           <GridSpan columns={1}>
             <CompareFontInput
               onChange={handleFile}
@@ -464,14 +471,17 @@ export default function CompareView() {
         <Divider variant="subtle" />
 
         <VStack gap={3}>
-          <TabList
-            onChange={(v) => setActiveTab(v as TabValue)}
-            value={activeTab}
-          >
-            {TABS.map((tab) => (
-              <Tab key={tab.value} label={tab.label} value={tab.value} />
-            ))}
-          </TabList>
+          <div className="scrollbar-hidden -mx-1 overflow-x-auto px-1">
+            <TabList
+              onChange={(v) => setActiveTab(v as TabValue)}
+              style={{ flexWrap: "nowrap" }}
+              value={activeTab}
+            >
+              {TABS.map((tab) => (
+                <Tab key={tab.value} label={tab.label} value={tab.value} />
+              ))}
+            </TabList>
+          </div>
 
           {commonScripts.length > 0 ? (
             <HStack gap={2} wrap="wrap">
@@ -575,7 +585,7 @@ function TextTabPanel({
       ) : null}
 
       {canPreview ? (
-        <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
+        <Grid columns={COMPARE_GRID_COLUMNS} gap={4} style={COMPARE_GRID_STYLE}>
           <GridSpan columns={1}>
             <ComparisonColumn
               fontSize={leftSize}
