@@ -6,7 +6,7 @@
     "ultracite/biome/next"
   ],
   "files": {
-    "includes": ["!!packages/font-engine/src/data"]
+    "includes": ["!!packages/font-engine/src/data", "!!apps/extension/temp"]
   },
   "overrides": [
     {
@@ -40,7 +40,9 @@
           "defineContentScriptUi",
           "defineUnlistedScript",
           "defineWxtPlugin",
-          "defineAppConfig"
+          "defineAppConfig",
+          "storage",
+          "createShadowRootUi"
         ]
       },
       "linter": {

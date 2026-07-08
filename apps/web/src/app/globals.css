@@ -125,3 +125,13 @@ html[data-theme="light"] {
     display: none;
   }
 }
+
+/* Match BottomSheet overlay: bg-background/40 backdrop-blur-sm */
+dialog.local-font-help-dialog::backdrop {
+  background-color: color-mix(
+    in oklch,
+    var(--color-background-body) 40%,
+    transparent
+  );
+  backdrop-filter: blur(4px);
+}

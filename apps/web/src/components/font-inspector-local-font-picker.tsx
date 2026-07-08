@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@astryxdesign/core/Button";
+import { VStack } from "@astryxdesign/core/Layout";
 import type {
   SearchableItem,
   SearchSource,
@@ -8,10 +10,13 @@ import { Typeahead } from "@astryxdesign/core/Typeahead";
 import {
   isLocalFontAccessSupported,
   type LocalFontEntry,
+  type LocalFontPermissionState,
   loadLocalFonts,
   readLocalFontBuffer,
+  subscribeLocalFontPermission,
 } from "@sora-type/font-engine/local-fonts";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LocalFontAccessHelpDialog } from "@/components/local-font-access-help-dialog";
 
 type LocalFontItem = SearchableItem<{ fontData: FontData }>;
 
@@ -40,14 +45,46 @@ export function InspectorLocalFontPicker({
   onSelect,
 }: InspectorLocalFontPickerProps) {
   const supported = useMemo(() => isLocalFontAccessSupported(), []);
-  const [permission, setPermission] = useState<"denied" | "granted" | "prompt">(
-    "prompt"
-  );
+  const [permission, setPermission] =
+    useState<LocalFontPermissionState>("prompt");
+  const [helpOpen, setHelpOpen] = useState(false);
   const [value, setValue] = useState<LocalFontItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cacheRef = useRef<LocalFontEntry[] | null>(null);
 
+  useEffect(() => {
+    let cleanup = () => {
+      return;
+    };
+    let cancelled = false;
+
+    subscribeLocalFontPermission((state) => {
+      if (cancelled) {
+        return;
+      }
+      setPermission(state);
+      if (state !== "granted") {
+        cacheRef.current = null;
+        setValue(null);
+      }
+    }).then((unsubscribe) => {
+      if (cancelled) {
+        unsubscribe();
+        return;
+      }
+      cleanup = unsubscribe;
+    });
+
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
+  }, []);
+
   const ensureFonts = useCallback(async (): Promise<LocalFontItem[]> => {
+    if (permission === "denied") {
+      return [];
+    }
     if (cacheRef.current) {
       return toItems(cacheRef.current);
     }
@@ -62,7 +99,7 @@ export function InspectorLocalFontPicker({
       }
       return [];
     }
-  }, []);
+  }, [permission]);
 
   const searchSource = useMemo<SearchSource<LocalFontItem>>(
     () => ({
@@ -107,21 +144,39 @@ export function InspectorLocalFontPicker({
     return null;
   }
 
+  const isPermissionDenied = permission === "denied";
+
   return (
-    <Typeahead
-      description={
-        permission === "denied"
-          ? "Local font access was denied. Allow it in your browser's site settings to use this."
-          : "Pick a font already installed on your system (Chrome/Edge only)."
-      }
-      hasEntriesOnFocus
-      isDisabled={isDisabled || permission === "denied"}
-      label="Or pick a local font"
-      onChange={handleChange}
-      placeholder="Search installed fonts…"
-      searchSource={searchSource}
-      status={error ? { type: "error", message: error } : undefined}
-      value={value}
-    />
+    <VStack gap={2}>
+      <Typeahead
+        description={
+          isPermissionDenied
+            ? "Local font access is blocked. Use “How to enable” below, then reload this page."
+            : "Pick a font already installed on your system (Chrome/Edge only)."
+        }
+        disabledMessage={
+          isPermissionDenied
+            ? "Local font access is blocked in your browser settings."
+            : undefined
+        }
+        hasEntriesOnFocus
+        isDisabled={isDisabled || isPermissionDenied}
+        label="Or pick a local font"
+        onChange={handleChange}
+        placeholder="Search installed fonts…"
+        searchSource={searchSource}
+        status={error ? { type: "error", message: error } : undefined}
+        value={value}
+      />
+      {isPermissionDenied ? (
+        <Button
+          label="How to enable"
+          onClick={() => setHelpOpen(true)}
+          size="sm"
+          variant="ghost"
+        />
+      ) : null}
+      <LocalFontAccessHelpDialog isOpen={helpOpen} onOpenChange={setHelpOpen} />
+    </VStack>
   );
 }
