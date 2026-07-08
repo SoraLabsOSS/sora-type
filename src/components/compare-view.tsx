@@ -20,6 +20,7 @@ import { CompareData } from "@/components/compare-data";
 import { CompareFeatures } from "@/components/compare-features";
 import { CompareOverlay } from "@/components/compare-overlay";
 import { CompareWaterfall } from "@/components/compare-waterfall";
+import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
 import { buildComparisonMatrix } from "@/lib/font-compare";
 import { clearFontFace, loadFontFace, toCssFontFamily } from "@/lib/font-face";
 import { extractFontMetadata, type FontMetadata } from "@/lib/font-metadata";
@@ -120,30 +121,52 @@ function isSlotReady(state: FontSlotState): boolean {
 }
 
 function CompareFontInput({
+  localFontPickerKey,
   onChange,
+  onLocalFontClear,
+  onLocalFontSelect,
   slot,
   state,
 }: {
+  localFontPickerKey: number;
   onChange: (slot: Slot, file: File | File[] | null) => void;
+  onLocalFontClear: (slot: Slot) => void;
+  onLocalFontSelect: (
+    slot: Slot,
+    fileName: string,
+    buffer: ArrayBuffer
+  ) => void;
   slot: Slot;
   state: FontSlotState;
 }) {
   return (
-    <FileInput
-      accept=".ttf,.otf,.woff,.woff2"
-      description="OTF, TTF, WOFF, or WOFF2"
-      isLoading={state.isLoading}
-      label={slot === "left" ? "First font" : "Second font"}
-      mode="dropzone"
-      onChange={(file) => onChange(slot, file)}
-      placeholder={
-        slot === "left"
-          ? "Drop one font here, or choose a file"
-          : "Drop another font here, or choose a file"
-      }
-      status={state.error ? { type: "error", message: state.error } : undefined}
-      value={state.file}
-    />
+    <VStack gap={2}>
+      <FileInput
+        accept=".ttf,.otf,.woff,.woff2"
+        description="OTF, TTF, WOFF, or WOFF2"
+        isLoading={state.isLoading}
+        label={slot === "left" ? "First font" : "Second font"}
+        mode="dropzone"
+        onChange={(file) => onChange(slot, file)}
+        placeholder={
+          slot === "left"
+            ? "Drop one font here, or choose a file"
+            : "Drop another font here, or choose a file"
+        }
+        status={
+          state.error ? { type: "error", message: state.error } : undefined
+        }
+        value={state.file}
+      />
+      <InspectorLocalFontPicker
+        isDisabled={state.isLoading}
+        key={localFontPickerKey}
+        onClear={() => onLocalFontClear(slot)}
+        onSelect={(fileName, buffer) =>
+          onLocalFontSelect(slot, fileName, buffer)
+        }
+      />
+    </VStack>
   );
 }
 
@@ -258,6 +281,13 @@ export default function CompareView() {
   const [syncSliders, setSyncSliders] = useState(false);
   const [normalLineHeight, setNormalLineHeight] = useState(false);
   const [customText, setCustomText] = useState("");
+  const [localFontPickerKeys, setLocalFontPickerKeys] = useState<
+    Record<Slot, number>
+  >({ left: 0, right: 0 });
+
+  const bumpLocalFontPickerKey = useCallback((slot: Slot) => {
+    setLocalFontPickerKeys((prev) => ({ ...prev, [slot]: prev[slot] + 1 }));
+  }, []);
 
   const updateSlot = useCallback(
     (slot: Slot, patch: Partial<FontSlotState>) => {
@@ -271,33 +301,29 @@ export default function CompareView() {
   // otherwise let the stale first result overwrite the newer one.
   const loadTokens = useRef<Record<Slot, number>>({ left: 0, right: 0 });
 
-  const handleFile = useCallback(
-    async (slot: Slot, selected: File | File[] | null) => {
-      const next = Array.isArray(selected) ? selected[0] : selected;
+  const loadFontIntoSlot = useCallback(
+    async (
+      slot: Slot,
+      fileName: string,
+      buffer: ArrayBuffer,
+      file: File | null
+    ) => {
       const token = ++loadTokens.current[slot];
-
-      if (!next) {
-        clearFontFace(slot);
-        updateSlot(slot, { ...EMPTY_SLOT });
-        return;
-      }
-
       updateSlot(slot, { isLoading: true, error: null });
       try {
-        const buffer = await next.arrayBuffer();
         const font = openFont(buffer);
-        const cssFontFamily = toCssFontFamily(slot, next.name);
+        const cssFontFamily = toCssFontFamily(slot, fileName);
         await loadFontFace(cssFontFamily, cssFontFamily, buffer);
         if (loadTokens.current[slot] !== token) {
           return;
         }
         updateSlot(slot, {
-          file: next,
+          file,
           font,
           buffer,
           cssFontFamily,
           meta: {
-            fileName: next.name,
+            fileName,
             fullName: font.fullName,
             familyName: font.familyName,
             style: font.subfamilyName,
@@ -314,6 +340,40 @@ export default function CompareView() {
           error: err instanceof Error ? err.message : "Could not parse font",
         });
       }
+    },
+    [updateSlot]
+  );
+
+  const handleFile = useCallback(
+    async (slot: Slot, selected: File | File[] | null) => {
+      const next = Array.isArray(selected) ? selected[0] : selected;
+      bumpLocalFontPickerKey(slot);
+
+      if (!next) {
+        loadTokens.current[slot]++;
+        clearFontFace(slot);
+        updateSlot(slot, { ...EMPTY_SLOT });
+        return;
+      }
+
+      const buffer = await next.arrayBuffer();
+      await loadFontIntoSlot(slot, next.name, buffer, next);
+    },
+    [bumpLocalFontPickerKey, loadFontIntoSlot, updateSlot]
+  );
+
+  const handleLocalFont = useCallback(
+    (slot: Slot, fileName: string, buffer: ArrayBuffer) => {
+      loadFontIntoSlot(slot, fileName, buffer, null);
+    },
+    [loadFontIntoSlot]
+  );
+
+  const handleLocalFontClear = useCallback(
+    (slot: Slot) => {
+      loadTokens.current[slot]++;
+      clearFontFace(slot);
+      updateSlot(slot, { ...EMPTY_SLOT });
     },
     [updateSlot]
   );
@@ -454,14 +514,20 @@ export default function CompareView() {
         <Grid columns={COMPARE_GRID_COLUMNS} gap={4} style={COMPARE_GRID_STYLE}>
           <GridSpan columns={1}>
             <CompareFontInput
+              localFontPickerKey={localFontPickerKeys.left}
               onChange={handleFile}
+              onLocalFontClear={handleLocalFontClear}
+              onLocalFontSelect={handleLocalFont}
               slot="left"
               state={slots.left}
             />
           </GridSpan>
           <GridSpan columns={1}>
             <CompareFontInput
+              localFontPickerKey={localFontPickerKeys.right}
               onChange={handleFile}
+              onLocalFontClear={handleLocalFontClear}
+              onLocalFontSelect={handleLocalFont}
               slot="right"
               state={slots.right}
             />
