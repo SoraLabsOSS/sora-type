@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RecentFontRow } from "@/components/recent-font-row";
 import { pickerEnabled, type RecentFont, recentFonts } from "@/utils/storage";
 
 const SORA_TYPE_URL = "https://type.soralabs.io.vn";
@@ -60,13 +61,7 @@ function RecentFontsList() {
   return (
     <ul className="flex max-h-48 flex-col gap-2 overflow-y-auto">
       {fonts.slice(0, POPUP_RECENT_PREVIEW_COUNT).map((font) => (
-        <li
-          className="rounded-md border border-[#88888833] p-2 text-sm"
-          key={`${font.family}-${font.detectedAt}`}
-        >
-          <p className="font-medium">{font.family}</p>
-          <p className="truncate text-[#888] text-xs">{font.pageTitle}</p>
-        </li>
+        <RecentFontRow font={font} key={`${font.family}-${font.detectedAt}`} />
       ))}
     </ul>
   );

@@ -15,12 +15,17 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@sora-type/font-engine": "workspace:*",
+    "@webext-core/messaging": "^3.0.2",
+    "buffer": "^6.0.3",
+    "fontkit": "^2.0.4",
     "motion": "^12.42.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",
+    "@types/fontkit": "^2.0.9",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.1.5",

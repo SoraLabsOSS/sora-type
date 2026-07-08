@@ -1,4 +1,7 @@
 import { createRoot, type Root } from "react-dom/client";
+import { loadFontSummary } from "@/utils/load-font-summary";
+import { onMessage } from "@/utils/messaging";
+import { scanPageFonts } from "@/utils/scan-page-fonts";
 import { pickerEnabled } from "@/utils/storage";
 import { PickerRoot } from "./picker-root";
 import "./style.css";
@@ -9,6 +12,16 @@ export default defineContentScript({
   matches: ["*://*/*"],
   cssInjectionMode: "ui",
   async main(ctx) {
+    // Independent of the picker toggle — scanning/loading are passive (just
+    // read computed styles/fetch a file, inject no UI) so they work whether
+    // or not the picker itself is armed.
+    const unregisterScan = onMessage("scanPageFonts", () => scanPageFonts());
+    const unregisterLoad = onMessage("loadFontSummary", ({ data }) =>
+      loadFontSummary(data.family)
+    );
+    ctx.onInvalidated(unregisterScan);
+    ctx.onInvalidated(unregisterLoad);
+
     const ui = await createShadowRootUi(ctx, {
       alignment: "top-left",
       anchor: "body",

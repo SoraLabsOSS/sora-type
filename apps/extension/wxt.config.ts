@@ -10,7 +10,11 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: "Sora Type",
     description: "Identify and inspect fonts on any web page.",
-    permissions: ["storage", ...(browser === "chrome" ? ["sidePanel"] : [])],
+    permissions: [
+      "storage",
+      "tabs",
+      ...(browser === "chrome" ? ["sidePanel"] : []),
+    ],
     // Chrome/Edge only for now — Firefox uses sidebar_action, which needs
     // its own entrypoint and manifest shape; add when the extension
     // supports Firefox.
