@@ -14,9 +14,7 @@ import {
   BottomSheetTitle,
   BottomSheetTrigger,
 } from "@/components/sora-ui/radix/bottom-sheet";
-
-const GITHUB_REPO_URL = "https://github.com/SoraLabsOSS/sora-type";
-const PORTFOLIO_URL = "https://nguyentruonggiang.id.vn";
+import { GITHUB_REPO_URL, PORTFOLIO_URL } from "@/lib/site";
 
 function openExternal(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
@@ -48,6 +46,14 @@ export function AppInfoSheet() {
         </BottomSheetDescription>
         <BottomSheetPanel>
           <BottomSheetList>
+            <BottomSheetRow
+              label="What's inside"
+              onClick={() => {
+                setOpen(false);
+                router.push("/about");
+              }}
+              value="→"
+            />
             <BottomSheetRow
               label="Crafted by"
               onClick={() => {

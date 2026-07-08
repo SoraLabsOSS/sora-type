@@ -6,6 +6,9 @@ export const SITE_DESCRIPTION =
 /** Production site origin — used for sitemap, robots, and metadata. */
 export const SITE_URL = "https://type.soralabs.io.vn" as const;
 
+export const GITHUB_REPO_URL = "https://github.com/SoraLabsOSS/sora-type";
+export const PORTFOLIO_URL = "https://nguyentruonggiang.id.vn";
+
 /**
  * Origin for resolving metadata and OG image URLs.
  * - Vercel production: `SITE_URL`

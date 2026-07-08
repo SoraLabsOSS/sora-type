@@ -10,11 +10,11 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <Section
-      className="flex min-h-0 flex-1 justify-center overflow-y-auto px-4 py-4 lg:px-6 lg:py-6"
+      className="scrollbar-hidden flex min-h-0 flex-1 flex-col justify-center px-4 py-4 max-lg:flex-none max-lg:overflow-visible lg:overflow-y-auto lg:overscroll-y-contain lg:px-6 lg:py-6"
       padding={0}
       variant="transparent"
     >
-      <Card className="w-full min-w-0 max-w-2xl bg-surface [--astryx-card-padding:var(--spacing-4)] lg:[--astryx-card-padding:var(--spacing-6)]">
+      <Card className="mx-auto w-full min-w-0 max-w-2xl bg-surface [--astryx-card-padding:var(--spacing-4)] lg:[--astryx-card-padding:var(--spacing-6)]">
         <VStack className="w-full min-w-0" gap={4}>
           <VStack gap={1}>
             <Text color="accent" type="supporting">
