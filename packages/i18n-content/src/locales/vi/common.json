@@ -1,0 +1,17 @@
+{
+  "nav": {
+    "inspector": "Kiểm tra font",
+    "compare": "So sánh",
+    "about": "Giới thiệu"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "notFound": {
+    "title": "404",
+    "description": "Không tìm thấy trang này.",
+    "backHome": "Về trang chủ"
+  }
+}

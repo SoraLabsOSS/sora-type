@@ -15,7 +15,17 @@ import {
   type FontMetadata,
 } from "@sora-type/font-engine/font-metadata";
 import type { summarizeSupport } from "@sora-type/font-engine/font-report";
+import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import { DetailRow } from "@/components/font-inspector-fields";
+
+function boldTag(chunks: ReactNode) {
+  return (
+    <Text as="span" weight="bold">
+      {chunks}
+    </Text>
+  );
+}
 
 interface FontInspectorSummaryPanelProps {
   accuracyDiscrepancies: AccuracyComparisonResult[];
@@ -31,16 +41,18 @@ function LanguageSystemsList({
 }: {
   languageSystems: OtToHtmlLangEntry[];
 }) {
+  const t = useTranslations("inspector.summaryPanel");
+
   if (languageSystems.length === 0) {
     return (
       <Text color="secondary" type="supporting">
-        No language-specific GSUB/GPOS layout tables detected.
+        {t("noLanguageSystems")}
       </Text>
     );
   }
   return (
     <Text color="secondary" type="supporting">
-      This font's GSUB/GPOS layout tables declare explicit support for:{" "}
+      {t("languageSystemsDeclared")}{" "}
       {languageSystems.map((entry, index) => (
         <span key={entry.ot}>
           {entry.name} ({entry.html})
@@ -59,6 +71,7 @@ export function FontInspectorSummaryPanel({
   positioningIssues,
   summary,
 }: FontInspectorSummaryPanelProps) {
+  const t = useTranslations("inspector.summaryPanel");
   const detailFields = fontMetadata ? buildFontDetailFields(fontMetadata) : [];
 
   return (
@@ -71,34 +84,41 @@ export function FontInspectorSummaryPanel({
                 defaultIsOpen
                 trigger={
                   <Text type="body">
-                    Language support ·{" "}
-                    <Text as="span" weight="bold">
-                      {summary.full}
-                    </Text>
-                    {" full"}
+                    {t.rich("languageSupportTrigger", {
+                      count: summary.full,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
                 <VStack gap={1}>
                   <Text type="body">
-                    <b>{summary.full}</b> full
+                    {t.rich("fullLine", { count: summary.full, b: boldTag })}
                   </Text>
                   <Text type="body">
-                    <b>{summary.decomposed}</b> decomposed
+                    {t.rich("decomposedLine", {
+                      count: summary.decomposed,
+                      b: boldTag,
+                    })}
                   </Text>
                   <Text type="body">
-                    <b>{summary.positioningFailed}</b> positioning failed
+                    {t.rich("positioningFailedLine", {
+                      count: summary.positioningFailed,
+                      b: boldTag,
+                    })}
                   </Text>
                   <Text type="body">
-                    <b>{summary.none}</b> unsupported
+                    {t.rich("unsupportedLine", {
+                      count: summary.none,
+                      b: boldTag,
+                    })}
                   </Text>
                   {accuracyDiscrepancies.length > 0 ? (
                     <Text color="secondary" type="supporting">
-                      <b>{accuracyDiscrepancies.length}</b> Southeast Asian
-                      language
-                      {accuracyDiscrepancies.length === 1 ? "" : "s"} look
-                      supported by cmap alone but fail mark positioning under
-                      shaping-verified checking.
+                      {t.rich("accuracyDiscrepancy", {
+                        count: accuracyDiscrepancies.length,
+                        b: boldTag,
+                      })}
                     </Text>
                   ) : null}
                 </VStack>
@@ -109,18 +129,17 @@ export function FontInspectorSummaryPanel({
           <Card className="bg-surface" padding={4}>
             <VStack gap={2}>
               <Text color="secondary" type="supporting">
-                TECHNICAL
+                {t("technical")}
               </Text>
 
               <Collapsible
                 defaultIsOpen={false}
                 trigger={
                   <Text type="body">
-                    OpenType features (
-                    <Text as="span" weight="bold">
-                      {fontMetadata.openTypeFeatures.length}
-                    </Text>
-                    )
+                    {t.rich("openTypeFeatures", {
+                      count: fontMetadata.openTypeFeatures.length,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
@@ -132,7 +151,7 @@ export function FontInspectorSummaryPanel({
                   </HStack>
                 ) : (
                   <Text color="secondary" type="supporting">
-                    No GSUB/GPOS feature tags detected.
+                    {t("noFeatureTags")}
                   </Text>
                 )}
               </Collapsible>
@@ -143,11 +162,10 @@ export function FontInspectorSummaryPanel({
                 defaultIsOpen={false}
                 trigger={
                   <Text type="body">
-                    Raw tables (
-                    <Text as="span" weight="bold">
-                      {fontMetadata.tables.length}
-                    </Text>
-                    )
+                    {t.rich("rawTables", {
+                      count: fontMetadata.tables.length,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
@@ -164,11 +182,10 @@ export function FontInspectorSummaryPanel({
                 defaultIsOpen={false}
                 trigger={
                   <Text type="body">
-                    All font details (
-                    <Text as="span" weight="bold">
-                      {detailFields.length}
-                    </Text>
-                    )
+                    {t.rich("allFontDetails", {
+                      count: detailFields.length,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
@@ -189,11 +206,10 @@ export function FontInspectorSummaryPanel({
                 defaultIsOpen={false}
                 trigger={
                   <Text type="body">
-                    Languages (
-                    <Text as="span" weight="bold">
-                      {detected.length}
-                    </Text>
-                    )
+                    {t.rich("languagesHeading", {
+                      count: detected.length,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
@@ -210,7 +226,7 @@ export function FontInspectorSummaryPanel({
                     </Text>
                     {detected.some((lang) => lang.support === "decomposed") ? (
                       <Text color="secondary" type="supporting">
-                        * supported via combining marks, not a precomposed glyph
+                        {t("decomposedNote")}
                       </Text>
                     ) : null}
                   </VStack>
@@ -223,11 +239,10 @@ export function FontInspectorSummaryPanel({
                 defaultIsOpen={false}
                 trigger={
                   <Text type="body">
-                    Language systems (
-                    <Text as="span" weight="bold">
-                      {languageSystems.length}
-                    </Text>
-                    )
+                    {t.rich("languageSystemsHeading", {
+                      count: languageSystems.length,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
@@ -242,25 +257,26 @@ export function FontInspectorSummaryPanel({
                 defaultIsOpen={false}
                 trigger={
                   <Text type="body">
-                    Positioning issues (
-                    <Text as="span" weight="bold">
-                      {positioningIssues.length}
-                    </Text>
-                    )
+                    {t.rich("positioningIssuesHeading", {
+                      count: positioningIssues.length,
+                      b: boldTag,
+                    })}
                   </Text>
                 }
               >
                 <VStack gap={2}>
                   <Text color="secondary" type="supporting">
-                    Glyphs exist but GPOS does not position combining marks
-                    correctly.
+                    {t("positioningIssuesNote")}
                   </Text>
-                  <List hasDividers header="Positioning issues">
+                  <List hasDividers header={t("positioningIssuesListHeader")}>
                     {positioningIssues.map((lang) => (
                       <ListItem
                         description={`${lang.script} · ${lang.unpositioned.join(", ")}`}
                         endContent={
-                          <Badge label="positioning failed" variant="warning" />
+                          <Badge
+                            label={t("positioningFailedBadge")}
+                            variant="warning"
+                          />
                         }
                         key={lang.rowKey}
                         label={lang.name}

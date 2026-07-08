@@ -9,6 +9,7 @@ import {
   getColorPalettes,
 } from "@sora-type/font-engine/font-color-palettes";
 import type { Font as FontkitFont } from "fontkit";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
 interface FontInspectorColorProps {
@@ -16,6 +17,7 @@ interface FontInspectorColorProps {
 }
 
 export function FontInspectorColor({ font }: FontInspectorColorProps) {
+  const t = useTranslations("inspector.color");
   const colorFormats = useMemo(() => getColorFormats(font), [font]);
   const palettes = useMemo(() => getColorPalettes(font), [font]);
 
@@ -24,22 +26,22 @@ export function FontInspectorColor({ font }: FontInspectorColorProps) {
       <Card className="bg-surface" padding={4}>
         <VStack gap={3}>
           <Heading className="font-sans" level={3}>
-            Color
+            {t("heading")}
           </Heading>
           {colorFormats.length > 0 ? (
             <Text color="secondary" type="supporting">
-              This font uses {colorFormats.join(", ")} for color glyphs.
+              {t("usesFormats", { formats: colorFormats.join(", ") })}
             </Text>
           ) : (
             <Text color="secondary" type="supporting">
-              This font has no color glyphs.
+              {t("noColorGlyphs")}
             </Text>
           )}
           {colorFormats.length > 0 && palettes.length === 0 && (
             <Banner
-              description="Colors are hardcoded directly in the font's glyphs (no palette to customize)."
+              description={t("noPaletteDescription")}
               status="warning"
-              title="No color palette"
+              title={t("noPaletteTitle")}
             />
           )}
         </VStack>
@@ -49,7 +51,7 @@ export function FontInspectorColor({ font }: FontInspectorColorProps) {
         <Card className="bg-surface" key={palette.index} padding={4}>
           <VStack gap={3}>
             <Heading className="font-sans" level={4}>
-              Palette {palette.index}
+              {t("paletteHeading", { index: palette.index })}
               {palette.name ? ` — ${palette.name}` : ""}
             </Heading>
             <HStack gap={2} style={{ flexWrap: "wrap" }}>

@@ -1,0 +1,109 @@
+{
+  "heading": "Compare",
+  "subheading": "Drop two fonts to preview sample text side by side and see which scripts both support.",
+  "tabs": {
+    "text": "Text",
+    "waterfall": "Waterfall",
+    "characters": "Characters",
+    "features": "Features",
+    "css": "CSS",
+    "overlay": "Overlay",
+    "data": "Data",
+    "pairing": "Pairing",
+    "about": "About Compare"
+  },
+  "fontInput": {
+    "first": "First font",
+    "second": "Second font",
+    "description": "OTF, TTF, WOFF, or WOFF2",
+    "placeholderFirst": "Drop one font here, or choose a file",
+    "placeholderSecond": "Drop another font here, or choose a file"
+  },
+  "emptyPanel": "Drop fonts above to compare them side by side.",
+  "axes": {
+    "heading": "Variable axes"
+  },
+  "notLoaded": {
+    "first": "First font not loaded yet.",
+    "second": "Second font not loaded yet."
+  },
+  "fontSize": "Font size",
+  "lineHeight": "Line height",
+  "lineHeightDisabledMessage": "Line-height is set to CSS 'normal'",
+  "customText": {
+    "label": "Custom preview text",
+    "hint": "Used in Text and Waterfall — leave blank to use the default sample."
+  },
+  "switches": {
+    "syncSliders": "Synchronize font size and line height",
+    "normalLineHeight": "Set CSS 'line-height: normal'"
+  },
+  "dataTab": {
+    "empty": "Load both fonts to compare their metadata and language support."
+  },
+  "status": {
+    "present": "Present",
+    "notPresent": "Not present"
+  },
+  "characters": {
+    "groupByCategory": "Group by category",
+    "captionAll": "Showing every character this font maps.",
+    "captionLimited": "Showing the first {max} of {total} characters."
+  },
+  "data": {
+    "highlightDifferences": "Highlight differences",
+    "fontDetails": "Font details",
+    "fieldHeader": "Field",
+    "axesHint": "Shown as min–default–max.",
+    "tablesHeading": "Tables ({count})",
+    "languageSupportHeading": "Language support"
+  },
+  "features": {
+    "featureHeader": "Feature",
+    "typeHeader": "Type",
+    "required": "Required",
+    "optional": "Optional",
+    "empty": "Neither font defines any OpenType layout features.",
+    "heading": "Layout features ({count})",
+    "sharedHeading": "Shared feature preview",
+    "sharedHint": "Both fonts support these — shown with the feature turned on."
+  },
+  "languageTable": {
+    "support": {
+      "full": "Full",
+      "decomposed": "Decomposed",
+      "positioningFailed": "Positioning issue",
+      "none": "Not supported"
+    },
+    "showDifferencesOnly": "Show differences only",
+    "noDifferences": "No language differences between these fonts.",
+    "languageHeader": "Language"
+  },
+  "overlay": {
+    "instructions": "Type up to {max} characters to overlay their outlines from both fonts.",
+    "showMetricGuides": "Show metric guides",
+    "metricGuidesDescription": "Dashed lines mark each font's own x-height and cap-height; the solid line is the shared baseline.",
+    "emptyState": "Type at least one character above to see its outline overlay.",
+    "missingFirst": "first font",
+    "missingSecond": "second font",
+    "and": "and",
+    "missingIn": "Missing in {fonts}",
+    "ariaLabel": "Glyph overlay for {char}"
+  },
+  "pairing": {
+    "heading": "Pairing",
+    "axisHeader": "Axis",
+    "differenceHeader": "Difference",
+    "empty": "Load both fonts to see how their proportions compare.",
+    "disclaimer": "This compares geometric proportions only — it can't judge taste. A \"Distinct\" result may be exactly the contrast you're going for.",
+    "magnitude": {
+      "matched": "Matched",
+      "moderate": "Moderate",
+      "distinct": "Distinct"
+    }
+  },
+  "about": {
+    "intro": "Compare loads two fonts entirely in your browser and lines them up side by side.",
+    "body": "<b>Text</b> shows reading feel at one size and line height. <b>Waterfall</b> steps through a size ladder so you can spot where a face gets fragile at small sizes or heavy at large ones. <b>Characters</b> shows every glyph each font maps, so you can see coverage gaps at a glance. <b>Features</b> compares which OpenType layout features each font defines — ligatures, small caps, stylistic sets — and previews the ones both fonts share. <b>CSS</b> gives you a ready-to-use stylesheet for each font. <b>Overlay</b> superimposes one glyph from both fonts so you can see shape differences directly. <b>Data</b> compares metadata, metrics, variable axes, and language support, highlighting where the two fonts differ. <b>Pairing</b> compares x-height, weight, and width between the two fonts and explains what the difference will look like — it doesn't tell you if the pairing is good. Type your own text above to use it in Text and Waterfall."
+  }
+}

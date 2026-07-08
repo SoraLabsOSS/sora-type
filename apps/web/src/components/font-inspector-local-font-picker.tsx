@@ -15,6 +15,7 @@ import {
   readLocalFontBuffer,
   subscribeLocalFontPermission,
 } from "@sora-type/font-engine/local-fonts";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LocalFontAccessHelpDialog } from "@/components/local-font-access-help-dialog";
 
@@ -44,6 +45,7 @@ export function InspectorLocalFontPicker({
   onClear,
   onSelect,
 }: InspectorLocalFontPickerProps) {
+  const t = useTranslations("inspector.localFontPicker");
   const supported = useMemo(() => isLocalFontAccessSupported(), []);
   const [permission, setPermission] =
     useState<LocalFontPermissionState>("prompt");
@@ -132,12 +134,10 @@ export function InspectorLocalFontPicker({
         setValue(item);
       } catch (err) {
         setValue(null);
-        setError(
-          err instanceof Error ? err.message : "Could not read local font"
-        );
+        setError(err instanceof Error ? err.message : t("errorFallback"));
       }
     },
-    [onSelect, onClear]
+    [onSelect, onClear, t]
   );
 
   if (!supported) {
@@ -151,26 +151,22 @@ export function InspectorLocalFontPicker({
       <Typeahead
         description={
           isPermissionDenied
-            ? "Local font access is blocked. Use “How to enable” below, then reload this page."
-            : "Pick a font already installed on your system (Chrome/Edge only)."
+            ? t("descriptionBlocked")
+            : t("descriptionAvailable")
         }
-        disabledMessage={
-          isPermissionDenied
-            ? "Local font access is blocked in your browser settings."
-            : undefined
-        }
+        disabledMessage={isPermissionDenied ? t("disabledMessage") : undefined}
         hasEntriesOnFocus
         isDisabled={isDisabled || isPermissionDenied}
-        label="Or pick a local font"
+        label={t("label")}
         onChange={handleChange}
-        placeholder="Search installed fonts…"
+        placeholder={t("placeholder")}
         searchSource={searchSource}
         status={error ? { type: "error", message: error } : undefined}
         value={value}
       />
       {isPermissionDenied ? (
         <Button
-          label="How to enable"
+          label={t("howToEnable")}
           onClick={() => setHelpOpen(true)}
           size="sm"
           variant="ghost"

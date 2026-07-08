@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "About"
+  },
+  "hero": {
+    "eyebrow": "🔍 WHAT IS THIS",
+    "heading": "A font inspector that runs entirely in your browser"
+  },
+  "intro": "Sora Type reads OpenType, TrueType, WOFF, and WOFF2 files with fontkit and shapes text with harfbuzzjs — both running client-side in WebAssembly. Drop in a font and see its metadata, glyph coverage, language support, and OpenType layout features, or load two fonts side by side to compare them directly.",
+  "inspector": {
+    "heading": "Inspector",
+    "body": "<b>Metadata & glyphs</b> shows every metric a font carries, plus a full glyph grid you can group by Unicode category. <b>Language support</b> checks real shaping behavior, not just character coverage — catching marks and combining characters that render but don't position correctly. The <b>variable font tester</b> gives you live sliders for every axis, named-instance presets, optical sizing, and one-click copy of the resulting <code>font-variation-settings</code> CSS. <b>Layout features & color</b> lets you toggle OpenType features on real text, browse alternates, and inspect COLR/CPAL palettes. <b>Raw tables</b> decodes every OpenType table a font defines, expandable field by field. And <b>CSS, subsetting & PDF</b> tools generate a ready-to-use stylesheet, estimate subsetting savings from your real page copy, or export a full PDF report."
+  },
+  "compare": {
+    "heading": "Compare",
+    "body": "Load two fonts side by side for <b>text and waterfall</b> reading at matched size and line-height, with independent variable-axis sliders per font, plus a full <b>glyph and OpenType-feature diff</b>. The <b>glyph overlay</b> superimposes outlines from both fonts with baseline, x-height, and cap-height guide lines so you can see shape differences directly. Every metric, variable axis, and OpenType table gets a <b>side-by-side diff</b>, and <b>pairing diagnostics</b> explain how the two fonts' x-height, weight, width, slant, and serif/sans-serif style differ in plain language — not a made-up compatibility score, just the facts and what they'll look like."
+  },
+  "privateByDesign": {
+    "eyebrow": "🛡️ PRIVATE BY DESIGN",
+    "body": "Your font files never leave your device for inspection or comparison. The one exception is PDF export, which needs a server-side PDF engine and discards the file immediately after rendering.",
+    "readPolicy": "Read the full privacy policy"
+  },
+  "footer": {
+    "credit": "Crafted by Axyl · open source",
+    "portfolio": "Portfolio",
+    "sourceCode": "Source code",
+    "reportIssue": "Report an issue"
+  }
+}

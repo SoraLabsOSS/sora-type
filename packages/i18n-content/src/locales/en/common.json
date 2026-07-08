@@ -1,0 +1,17 @@
+{
+  "nav": {
+    "inspector": "Inspector",
+    "compare": "Compare",
+    "about": "About"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "notFound": {
+    "title": "404",
+    "description": "This page could not be found.",
+    "backHome": "Back to Home"
+  }
+}

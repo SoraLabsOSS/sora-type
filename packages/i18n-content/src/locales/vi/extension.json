@@ -1,0 +1,44 @@
+{
+  "popup": {
+    "title": "Sora Type",
+    "pickerLabel": "Công cụ chọn font",
+    "pickerHint": "Bấm vào chữ bất kỳ trên trang để kiểm tra font",
+    "pickerShortcutHint": "Bấm vào chữ bất kỳ trên trang để kiểm tra font · phím tắt: {shortcut}",
+    "openSidePanel": "Mở bảng bên",
+    "openSoraType": "Mở Sora Type",
+    "recentFontsHeading": "Font gần đây",
+    "recentFontsEmpty": "Chưa có font nào được kiểm tra — bật công cụ chọn và bấm vào chữ."
+  },
+  "panel": {
+    "loadFontFile": "Tải file font",
+    "loading": "Đang tải…",
+    "notFound": "Không tìm thấy file của font này — có thể là font hệ thống, hoặc stylesheet cross-origin bị chặn không đọc được.",
+    "openInSoraType": "Mở trong Sora Type →",
+    "close": "Đóng",
+    "variant": "Kiểu",
+    "size": "Cỡ chữ",
+    "lineHeight": "Line height",
+    "color": "Màu"
+  },
+  "recentFontRow": {
+    "loadRealFontName": "Tải tên font thật",
+    "loading": "Đang tải…",
+    "tabNotFound": "Mở trang này trong một tab để tải font thật của nó.",
+    "notFound": "Không tìm thấy file của font này (font hệ thống, hoặc stylesheet cross-origin bị chặn không đọc được).",
+    "openInSoraType": "Mở trong Sora Type →"
+  },
+  "sidepanel": {
+    "title": "Sora Type",
+    "pageFonts": {
+      "heading": "Font trên trang này",
+      "rescan": "Quét lại",
+      "unavailable": "Không thể quét trang này.",
+      "scanning": "Đang quét…",
+      "empty": "Không tìm thấy văn bản nào trên trang này."
+    },
+    "recentlyInspected": {
+      "heading": "Kiểm tra gần đây",
+      "empty": "Chưa có font nào được kiểm tra."
+    }
+  }
+}

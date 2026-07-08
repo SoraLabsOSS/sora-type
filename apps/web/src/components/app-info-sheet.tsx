@@ -2,7 +2,6 @@
 
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { Info } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   BottomSheet,
@@ -14,6 +13,7 @@ import {
   BottomSheetTitle,
   BottomSheetTrigger,
 } from "@/components/sora-ui/radix/bottom-sheet";
+import { useRouter } from "@/i18n/navigation";
 import { GITHUB_REPO_URL, PORTFOLIO_URL } from "@/lib/site";
 
 function openExternal(url: string) {

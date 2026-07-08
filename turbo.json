@@ -15,6 +15,9 @@
     "build:languages": {
       "outputs": ["src/data/languages.json"]
     },
+    "i18n:sync-extension": {
+      "outputs": ["../../apps/extension/locales/**"]
+    },
     "check:font": {
       "cache": false
     },

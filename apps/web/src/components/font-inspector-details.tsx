@@ -9,6 +9,7 @@ import {
   buildFontDetailFields,
   type FontMetadata,
 } from "@sora-type/font-engine/font-metadata";
+import { useTranslations } from "next-intl";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -34,6 +35,7 @@ interface FontInspectorDetailsProps {
 }
 
 export function FontInspectorDetails({ metadata }: FontInspectorDetailsProps) {
+  const t = useTranslations("inspector.details");
   const detailFields = buildFontDetailFields(metadata);
   const featureCount = metadata.openTypeFeatures.length;
   const tableCount = metadata.tables.length;
@@ -43,7 +45,7 @@ export function FontInspectorDetails({ metadata }: FontInspectorDetailsProps) {
     <VStack gap={6}>
       <VStack gap={2}>
         <Heading className="font-sans" level={3}>
-          Font details
+          {t("heading")}
         </Heading>
         <VStack gap={2}>
           {detailFields.map((field) => (
@@ -60,7 +62,7 @@ export function FontInspectorDetails({ metadata }: FontInspectorDetailsProps) {
         <VStack gap={2}>
           <Divider variant="subtle" />
           <Heading className="font-sans" level={3}>
-            Variable font axes ({metadata.variationAxes.length})
+            {t("variableAxesHeading", { count: metadata.variationAxes.length })}
           </Heading>
           <VStack gap={2}>
             {metadata.variationAxes.map((axis) => (
@@ -80,17 +82,16 @@ export function FontInspectorDetails({ metadata }: FontInspectorDetailsProps) {
           defaultIsOpen={featureCount > 0}
           trigger={
             <Text type="body">
-              {featureCount > 0 ? (
-                <>
-                  OpenType features were detected in the font (
-                  <Text as="span" weight="bold">
-                    {featureCount}
-                  </Text>
-                  )
-                </>
-              ) : (
-                "No OpenType layout features detected"
-              )}
+              {featureCount > 0
+                ? t.rich("featuresDetectedWithCount", {
+                    count: featureCount,
+                    b: (chunks) => (
+                      <Text as="span" weight="bold">
+                        {chunks}
+                      </Text>
+                    ),
+                  })
+                : t("noFeatures")}
             </Text>
           }
         >
@@ -102,8 +103,7 @@ export function FontInspectorDetails({ metadata }: FontInspectorDetailsProps) {
             </HStack>
           ) : (
             <Text color="secondary" type="supporting">
-              This font has no GSUB/GPOS feature tags exposed by the layout
-              tables.
+              {t("noFeatureTags")}
             </Text>
           )}
         </Collapsible>
@@ -115,11 +115,14 @@ export function FontInspectorDetails({ metadata }: FontInspectorDetailsProps) {
           defaultIsOpen={false}
           trigger={
             <Text type="body">
-              OpenType tables (
-              <Text as="span" weight="bold">
-                {tableCount}
-              </Text>
-              )
+              {t.rich("tablesHeading", {
+                count: tableCount,
+                b: (chunks) => (
+                  <Text as="span" weight="bold">
+                    {chunks}
+                  </Text>
+                ),
+              })}
             </Text>
           }
         >

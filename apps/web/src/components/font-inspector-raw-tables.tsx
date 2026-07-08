@@ -12,6 +12,7 @@ import {
   type RawTableSection as RawTableSectionData,
 } from "@sora-type/font-engine/font-raw-tables";
 import type { Font as FontkitFont } from "fontkit";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
 interface FontInspectorRawTablesProps {
@@ -32,12 +33,14 @@ function toFieldRows(rows: RawDisplayRow[]): RawFieldRow[] {
 }
 
 function RawTableFields({ rows }: { rows: RawDisplayRow[] }) {
+  const t = useTranslations("inspector.rawTables");
+
   return (
     <Table<RawFieldRow>
       columns={[
         {
           key: "key",
-          header: "Field",
+          header: t("fieldHeader"),
           width: proportional(2, { minWidth: 120 }),
           renderCell: (row) => (
             <Text className="font-mono" color="secondary" type="supporting">
@@ -47,7 +50,7 @@ function RawTableFields({ rows }: { rows: RawDisplayRow[] }) {
         },
         {
           key: "value",
-          header: "Value",
+          header: t("valueHeader"),
           width: proportional(3, { minWidth: 160 }),
           renderCell: (row) => (
             <Text className="wrap-break-word font-mono" type="body">
@@ -73,7 +76,7 @@ function RawTableSectionBlock({
   index: number;
   section: RawTableSectionData;
 }) {
-  const fieldLabel = section.rows.length === 1 ? "field" : "fields";
+  const t = useTranslations("inspector.rawTables");
 
   return (
     <VStack gap={2}>
@@ -91,12 +94,12 @@ function RawTableSectionBlock({
             </Text>
             {" · "}
             <Text as="span" color="secondary">
-              {section.parsed ? section.description : "Not parsed"}
+              {section.parsed ? section.description : t("notParsed")}
             </Text>
             {section.rows.length > 0 ? (
               <Text as="span" color="secondary">
                 {" "}
-                ({section.rows.length} {fieldLabel})
+                ({t("fieldCount", { count: section.rows.length })})
               </Text>
             ) : null}
           </Text>
@@ -107,7 +110,7 @@ function RawTableSectionBlock({
             <RawTableFields rows={section.rows} />
           ) : (
             <Text color="secondary" type="supporting">
-              No decoded fields for this table.
+              {t("noFields")}
             </Text>
           )}
         </VStack>
@@ -117,12 +120,13 @@ function RawTableSectionBlock({
 }
 
 export function FontInspectorRawTables({ font }: FontInspectorRawTablesProps) {
+  const t = useTranslations("inspector.rawTables");
   const sections = useMemo(() => buildRawTableSections(font), [font]);
 
   if (sections.length === 0) {
     return (
       <Text color="secondary" type="supporting">
-        No raw tables found in this font.
+        {t("empty")}
       </Text>
     );
   }
@@ -137,11 +141,10 @@ export function FontInspectorRawTables({ font }: FontInspectorRawTablesProps) {
       <VStack gap={4}>
         <VStack gap={2}>
           <Heading className="font-sans" level={3}>
-            Raw tables
+            {t("heading")}
           </Heading>
           <Text color="secondary" type="supporting">
-            {sections.length} tables · {totalBytes.toLocaleString()} bytes
-            total. Expand a table to inspect its decoded fields.
+            {t("summary", { tableCount: sections.length, totalBytes })}
           </Text>
         </VStack>
 

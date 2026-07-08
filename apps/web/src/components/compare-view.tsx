@@ -25,6 +25,7 @@ import {
 } from "@sora-type/font-engine/font-metadata";
 import { buildVariationSettings } from "@sora-type/font-engine/font-variable-instances";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompareCharacters } from "@/components/compare-characters";
 import { CompareCss } from "@/components/compare-css";
@@ -100,16 +101,16 @@ const COMPARE_SECTION_CLASS = [
 const SAMPLE_TEXT =
   "Traditionally, text is composed to create a readable, coherent, and visually satisfying typeface that works invisibly, without the awareness of the reader. Even distribution of typeset material, with a minimum of distractions and anomalies, is aimed at producing clarity and transparency.";
 
-const TABS: { label: string; value: TabValue }[] = [
-  { value: "text", label: "Text" },
-  { value: "waterfall", label: "Waterfall" },
-  { value: "characters", label: "Characters" },
-  { value: "features", label: "Features" },
-  { value: "css", label: "CSS" },
-  { value: "overlay", label: "Overlay" },
-  { value: "data", label: "Data" },
-  { value: "pairing", label: "Pairing" },
-  { value: "about", label: "About Compare" },
+const TAB_VALUES: TabValue[] = [
+  "text",
+  "waterfall",
+  "characters",
+  "features",
+  "css",
+  "overlay",
+  "data",
+  "pairing",
+  "about",
 ];
 
 function openFont(buffer: ArrayBuffer): FontkitFont {
@@ -151,19 +152,21 @@ function CompareFontInput({
   slot: Slot;
   state: FontSlotState;
 }) {
+  const t = useTranslations("compare");
+
   return (
     <VStack gap={2}>
       <FileInput
         accept=".ttf,.otf,.woff,.woff2"
-        description="OTF, TTF, WOFF, or WOFF2"
+        description={t("fontInput.description")}
         isLoading={state.isLoading}
-        label={slot === "left" ? "First font" : "Second font"}
+        label={slot === "left" ? t("fontInput.first") : t("fontInput.second")}
         mode="dropzone"
         onChange={(file) => onChange(slot, file)}
         placeholder={
           slot === "left"
-            ? "Drop one font here, or choose a file"
-            : "Drop another font here, or choose a file"
+            ? t("fontInput.placeholderFirst")
+            : t("fontInput.placeholderSecond")
         }
         status={
           state.error ? { type: "error", message: state.error } : undefined
@@ -183,11 +186,12 @@ function CompareFontInput({
 }
 
 function CompareEmptyPanel() {
+  const t = useTranslations("compare");
   return (
     <Card minHeight={192} padding={4}>
       <Center>
         <Text color="secondary" type="body">
-          Drop fonts above to compare them side by side.
+          {t("emptyPanel")}
         </Text>
       </Center>
     </Card>
@@ -203,6 +207,8 @@ function ComparisonColumnAxes({
   metadata: FontMetadata;
   onAxisChange: (tag: string, value: number) => void;
 }) {
+  const t = useTranslations("compare");
+
   if (metadata.variationAxes.length === 0) {
     return null;
   }
@@ -212,7 +218,7 @@ function ComparisonColumnAxes({
       <Divider variant="subtle" />
       <VStack gap={3}>
         <Text color="secondary" type="supporting">
-          Variable axes
+          {t("axes.heading")}
         </Text>
         {metadata.variationAxes.map((axis) => (
           <VStack gap={1} key={axis.tag}>
@@ -278,11 +284,13 @@ function ComparisonColumn({
   state: FontSlotState;
   text: string;
 }) {
+  const t = useTranslations("compare");
+
   if (!(state.font && state.meta && state.cssFontFamily && metadata)) {
     return (
       <Card height="100%" minHeight={240} padding={4}>
         <Text color="secondary" type="supporting">
-          {slot === "left" ? "First" : "Second"} font not loaded yet.
+          {slot === "left" ? t("notLoaded.first") : t("notLoaded.second")}
         </Text>
       </Card>
     );
@@ -305,17 +313,17 @@ function ComparisonColumn({
         <VStack gap={2}>
           <Slider
             formatValue={(v) => `${v}px`}
-            label="Font size"
+            label={t("fontSize")}
             max={72}
             min={8}
             onChange={(v: number) => onFontSizeChange(slot, v)}
             value={fontSize}
           />
           <Slider
-            disabledMessage="Line-height is set to CSS 'normal'"
+            disabledMessage={t("lineHeightDisabledMessage")}
             formatValue={(v) => v.toFixed(1)}
             isDisabled={normalLineHeight}
-            label="Line height"
+            label={t("lineHeight")}
             max={3}
             min={1}
             onChange={(v: number) => onLineHeightChange(slot, v)}
@@ -355,6 +363,7 @@ function ComparisonColumn({
 }
 
 export default function CompareView() {
+  const t = useTranslations("compare");
   const [slots, setSlots] = useState<Record<Slot, FontSlotState>>({
     left: EMPTY_SLOT,
     right: EMPTY_SLOT,
@@ -629,11 +638,10 @@ export default function CompareView() {
       <VStack className="pb-4" gap={6} style={{ width: "100%" }}>
         <VStack gap={1}>
           <Heading className="font-sans" level={1}>
-            Compare
+            {t("heading")}
           </Heading>
           <Text color="secondary" type="body">
-            Drop two fonts to preview sample text side by side and see which
-            scripts both support.
+            {t("subheading")}
           </Text>
         </VStack>
 
@@ -669,8 +677,8 @@ export default function CompareView() {
               style={{ flexWrap: "nowrap" }}
               value={activeTab}
             >
-              {TABS.map((tab) => (
-                <Tab key={tab.value} label={tab.label} value={tab.value} />
+              {TAB_VALUES.map((value) => (
+                <Tab key={value} label={t(`tabs.${value}`)} value={value} />
               ))}
             </TabList>
           </div>
@@ -686,10 +694,9 @@ export default function CompareView() {
 
         <Card padding={4}>
           <VStack gap={2}>
-            <Text type="body">Custom preview text</Text>
+            <Text type="body">{t("customText.label")}</Text>
             <Text color="secondary" type="supporting">
-              Used in Text and Waterfall — leave blank to use the default
-              sample.
+              {t("customText.hint")}
             </Text>
             <textarea
               className="w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors placeholder:text-secondary focus-visible:border-accent"
@@ -767,18 +774,20 @@ function TextTabPanel({
   syncSliders: boolean;
   text: string;
 }) {
+  const t = useTranslations("compare");
+
   return (
     <VStack gap={4}>
       {canPreview ? (
         <Card padding={4}>
           <HStack gap={6} wrap="wrap">
             <Switch
-              label="Synchronize font size and line height"
+              label={t("switches.syncSliders")}
               onChange={setSyncSliders}
               value={syncSliders}
             />
             <Switch
-              label="Set CSS 'line-height: normal'"
+              label={t("switches.normalLineHeight")}
               onChange={setNormalLineHeight}
               value={normalLineHeight}
             />
@@ -827,29 +836,16 @@ function TextTabPanel({
 }
 
 function AboutTabPanel() {
+  const t = useTranslations("compare.about");
+
   return (
     <Card padding={4}>
       <VStack gap={3}>
         <Text as="p" type="body">
-          Compare loads two fonts entirely in your browser and lines them up
-          side by side.
+          {t("intro")}
         </Text>
         <Text as="p" type="body">
-          <b>Text</b> shows reading feel at one size and line height.{" "}
-          <b>Waterfall</b> steps through a size ladder so you can spot where a
-          face gets fragile at small sizes or heavy at large ones.{" "}
-          <b>Characters</b> shows every glyph each font maps, so you can see
-          coverage gaps at a glance. <b>Features</b> compares which OpenType
-          layout features each font defines — ligatures, small caps, stylistic
-          sets — and previews the ones both fonts share. <b>CSS</b> gives you a
-          ready-to-use stylesheet for each font. <b>Overlay</b> superimposes one
-          glyph from both fonts so you can see shape differences directly.{" "}
-          <b>Data</b> compares metadata, metrics, variable axes, and language
-          support, highlighting where the two fonts differ. <b>Pairing</b>{" "}
-          compares x-height, weight, and width between the two fonts and
-          explains what the difference will look like — it doesn't tell you if
-          the pairing is good. Type your own text above to use it in Text and
-          Waterfall.
+          {t.rich("body", { b: (chunks) => <b>{chunks}</b> })}
         </Text>
       </VStack>
     </Card>
@@ -929,6 +925,7 @@ function CompareTabPanels({
   slots: Record<Slot, FontSlotState>;
   syncSliders: boolean;
 }) {
+  const t = useTranslations("compare");
   const trimmedCustomText = customText.trim();
 
   if (activeTab === "text") {
@@ -994,7 +991,7 @@ function CompareTabPanels({
     ) : (
       <Card padding={4}>
         <Text color="secondary" type="body">
-          Load both fonts to compare their metadata and language support.
+          {t("dataTab.empty")}
         </Text>
       </Card>
     );

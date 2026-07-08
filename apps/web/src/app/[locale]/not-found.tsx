@@ -2,6 +2,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { VStack } from "@astryxdesign/core/Layout";
 import { Section } from "@astryxdesign/core/Section";
 import { Heading, Text } from "@astryxdesign/core/Text";
+import { useTranslations } from "next-intl";
 
 const NOT_FOUND_SECTION_CLASS = [
   "flex h-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 lg:px-6 lg:py-6",
@@ -9,6 +10,8 @@ const NOT_FOUND_SECTION_CLASS = [
 ].join(" ");
 
 export default function NotFound() {
+  const t = useTranslations("common.notFound");
+
   return (
     <Section
       className={NOT_FOUND_SECTION_CLASS}
@@ -20,12 +23,12 @@ export default function NotFound() {
           className="font-heading font-normal text-8xl leading-none tracking-tight"
           level={1}
         >
-          404
+          {t("title")}
         </Heading>
         <Text color="secondary" type="body">
-          This page could not be found.
+          {t("description")}
         </Text>
-        <Button href="/" label="Back to Home" variant="primary" />
+        <Button href="/" label={t("backHome")} variant="primary" />
       </VStack>
     </Section>
   );

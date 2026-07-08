@@ -12,6 +12,7 @@ import {
   type FontMetadata,
   formatFileSize,
 } from "@sora-type/font-engine/font-metadata";
+import { useLocale, useTranslations } from "next-intl";
 import type { InspectorView } from "@/components/font-inspector";
 import {
   buildOneLinerSummary,
@@ -38,15 +39,25 @@ interface FontInspectorSidebarProps {
   view: InspectorView;
 }
 
-const INSPECTOR_VIEWS: { label: string; value: InspectorView }[] = [
-  { label: "Overview", value: "overview" },
-  { label: "Raw tables", value: "raw-tables" },
-  { label: "Tester", value: "tester" },
-  { label: "Layout Features", value: "layout-features" },
-  { label: "Color", value: "color" },
-  { label: "CSS", value: "css" },
-  { label: "Subsetting", value: "subsetting" },
+const INSPECTOR_VIEW_VALUES: InspectorView[] = [
+  "overview",
+  "raw-tables",
+  "tester",
+  "layout-features",
+  "color",
+  "css",
+  "subsetting",
 ];
+
+const VIEW_LABEL_KEY: Record<InspectorView, string> = {
+  overview: "overview",
+  "raw-tables": "rawTables",
+  tester: "tester",
+  "layout-features": "layoutFeatures",
+  color: "color",
+  css: "css",
+  subsetting: "subsetting",
+};
 
 export function FontInspectorSidebar({
   detected,
@@ -59,23 +70,35 @@ export function FontInspectorSidebar({
   onViewChange,
   view,
 }: FontInspectorSidebarProps) {
-  const scriptSummary = summarizeScripts(detected);
+  const t = useTranslations("inspector.sidebar");
+  const tSummary = useTranslations("inspector");
+  const locale = useLocale();
+  const scriptSummary = summarizeScripts(detected, tSummary);
   const summaryFields = fontMetadata
     ? buildFontSummaryFields(fontMetadata, scriptSummary)
     : [];
   const oneLinerSummary = fontMetadata
-    ? buildOneLinerSummary({
-        featureCount: fontMetadata.openTypeFeatures.length,
-        isColor: hasColor,
-        isHinted: fontMetadata.isHinted,
-        isVariable: fontMetadata.variationAxes.length > 0,
-        languageCount: detected.length,
-        outlineFormats: fontMetadata.outlineFormats,
-      })
+    ? buildOneLinerSummary(
+        {
+          featureCount: fontMetadata.openTypeFeatures.length,
+          isColor: hasColor,
+          isHinted: fontMetadata.isHinted,
+          isVariable: fontMetadata.variationAxes.length > 0,
+          languageCount: detected.length,
+          outlineFormats: fontMetadata.outlineFormats,
+        },
+        locale,
+        tSummary
+      )
     : "";
-  const inspectorViews = hasColor
-    ? INSPECTOR_VIEWS
-    : INSPECTOR_VIEWS.filter((option) => option.value !== "color");
+  const inspectorViews = (
+    hasColor
+      ? INSPECTOR_VIEW_VALUES
+      : INSPECTOR_VIEW_VALUES.filter((value) => value !== "color")
+  ).map((value) => ({
+    value,
+    label: t(`views.${VIEW_LABEL_KEY[value]}`),
+  }));
 
   return (
     <VStack className="min-h-0" gap={4}>
@@ -87,7 +110,7 @@ export function FontInspectorSidebar({
                 {loadedFont.fullName}
               </Heading>
               <Heading className="font-sans" level={2}>
-                {loadedFont.numGlyphs.toLocaleString()} glyphs
+                {t("glyphsCount", { count: loadedFont.numGlyphs })}
               </Heading>
               <HStack gap={2} style={{ flexWrap: "wrap" }}>
                 <Badge
@@ -107,7 +130,7 @@ export function FontInspectorSidebar({
               ) : null}
               {isPlaceholder ? (
                 <Text color="secondary" type="supporting">
-                  Example font — upload yours to inspect it.
+                  {t("placeholderNotice")}
                 </Text>
               ) : null}
             </VStack>
@@ -129,7 +152,7 @@ export function FontInspectorSidebar({
           <Card className="bg-surface" padding={4}>
             <VStack gap={3}>
               <Text color="secondary" type="supporting">
-                METADATA
+                {t("metadataHeading")}
               </Text>
               <VStack gap={2}>
                 {summaryFields.map((field) => (
@@ -162,7 +185,7 @@ export function FontInspectorSidebar({
         <Button
           isDisabled={isPlaceholder}
           isLoading={isExporting}
-          label="Export PDF report"
+          label={t("exportPdf")}
           onClick={onExportPdf}
           variant="secondary"
         />

@@ -1,0 +1,17 @@
+{
+  "name": "@sora-type/i18n-content",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/get-messages.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "i18n:sync-extension": "bun run scripts/sync-extension-locales.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

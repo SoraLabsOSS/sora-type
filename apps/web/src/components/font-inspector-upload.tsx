@@ -2,11 +2,9 @@
 
 import type { FileInputProps } from "@astryxdesign/core/FileInput";
 import { FileInput } from "@astryxdesign/core/FileInput";
+import { useTranslations } from "next-intl";
 
 export const INSPECTOR_FONT_ACCEPT = ".ttf,.otf,.woff,.woff2";
-export const INSPECTOR_FONT_LABEL = "Upload font";
-export const INSPECTOR_FONT_PLACEHOLDER = "Drop font here or click to upload";
-export const INSPECTOR_FONT_DESCRIPTION = "Supports TTF · OTF · WOFF · WOFF2";
 
 type InspectorFontUploadProps = Omit<
   FileInputProps,
@@ -14,14 +12,16 @@ type InspectorFontUploadProps = Omit<
 >;
 
 export function InspectorFontUpload(props: InspectorFontUploadProps) {
+  const t = useTranslations("inspector.upload");
+
   return (
     <div className="inspector-upload [&_[role=button]]:min-h-[7.5rem] [&_[role=button]]:border-border-strong [&_[role=button]]:text-primary [&_[role=button]_span]:text-primary [&_[role=button]_svg]:size-8 [&_[role=button]_svg]:text-primary">
       <FileInput
-        description={INSPECTOR_FONT_DESCRIPTION}
+        description={t("description")}
         isLabelHidden
-        label={INSPECTOR_FONT_LABEL}
+        label={t("label")}
         mode="dropzone"
-        placeholder={INSPECTOR_FONT_PLACEHOLDER}
+        placeholder={t("placeholder")}
         {...props}
       />
     </div>

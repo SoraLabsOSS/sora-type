@@ -1,0 +1,109 @@
+{
+  "heading": "So sánh",
+  "subheading": "Thả hai font vào để xem trước văn bản mẫu cạnh nhau và xem chúng cùng hỗ trợ script nào.",
+  "tabs": {
+    "text": "Văn bản",
+    "waterfall": "Waterfall",
+    "characters": "Ký tự",
+    "features": "Tính năng",
+    "css": "CSS",
+    "overlay": "Lớp phủ",
+    "data": "Dữ liệu",
+    "pairing": "Ghép cặp",
+    "about": "Giới thiệu So sánh"
+  },
+  "fontInput": {
+    "first": "Font thứ nhất",
+    "second": "Font thứ hai",
+    "description": "OTF, TTF, WOFF hoặc WOFF2",
+    "placeholderFirst": "Thả một font vào đây, hoặc chọn file",
+    "placeholderSecond": "Thả font khác vào đây, hoặc chọn file"
+  },
+  "emptyPanel": "Thả font vào phía trên để so sánh cạnh nhau.",
+  "axes": {
+    "heading": "Trục biến thiên"
+  },
+  "notLoaded": {
+    "first": "Font thứ nhất chưa được tải.",
+    "second": "Font thứ hai chưa được tải."
+  },
+  "fontSize": "Cỡ chữ",
+  "lineHeight": "Line-height",
+  "lineHeightDisabledMessage": "Line-height đang được đặt là CSS 'normal'",
+  "customText": {
+    "label": "Văn bản xem trước tùy chỉnh",
+    "hint": "Dùng trong tab Văn bản và Waterfall — để trống để dùng văn bản mẫu mặc định."
+  },
+  "switches": {
+    "syncSliders": "Đồng bộ cỡ chữ và line-height",
+    "normalLineHeight": "Đặt CSS 'line-height: normal'"
+  },
+  "dataTab": {
+    "empty": "Tải cả hai font để so sánh metadata và hỗ trợ ngôn ngữ."
+  },
+  "status": {
+    "present": "Có",
+    "notPresent": "Không có"
+  },
+  "characters": {
+    "groupByCategory": "Nhóm theo danh mục",
+    "captionAll": "Hiển thị mọi ký tự font này ánh xạ.",
+    "captionLimited": "Hiển thị {max} trên tổng {total} ký tự."
+  },
+  "data": {
+    "highlightDifferences": "Làm nổi bật khác biệt",
+    "fontDetails": "Chi tiết font",
+    "fieldHeader": "Trường",
+    "axesHint": "Hiển thị dạng min–default–max.",
+    "tablesHeading": "Bảng dữ liệu ({count})",
+    "languageSupportHeading": "Hỗ trợ ngôn ngữ"
+  },
+  "features": {
+    "featureHeader": "Tính năng",
+    "typeHeader": "Loại",
+    "required": "Bắt buộc",
+    "optional": "Tùy chọn",
+    "empty": "Không có font nào định nghĩa tính năng layout OpenType.",
+    "heading": "Tính năng layout ({count})",
+    "sharedHeading": "Xem trước tính năng chung",
+    "sharedHint": "Cả hai font đều hỗ trợ các tính năng này — hiển thị khi bật tính năng."
+  },
+  "languageTable": {
+    "support": {
+      "full": "Đầy đủ",
+      "decomposed": "Tổ hợp",
+      "positioningFailed": "Lỗi định vị",
+      "none": "Không hỗ trợ"
+    },
+    "showDifferencesOnly": "Chỉ hiển thị khác biệt",
+    "noDifferences": "Không có khác biệt ngôn ngữ giữa hai font này.",
+    "languageHeader": "Ngôn ngữ"
+  },
+  "overlay": {
+    "instructions": "Gõ tối đa {max} ký tự để chồng đường viền của chúng từ cả hai font.",
+    "showMetricGuides": "Hiện đường dẫn chỉ số",
+    "metricGuidesDescription": "Đường đứt nét đánh dấu x-height và cap-height riêng của mỗi font; đường liền là baseline dùng chung.",
+    "emptyState": "Gõ ít nhất một ký tự ở trên để xem lớp phủ đường viền.",
+    "missingFirst": "font thứ nhất",
+    "missingSecond": "font thứ hai",
+    "and": "và",
+    "missingIn": "Thiếu trong {fonts}",
+    "ariaLabel": "Lớp phủ glyph cho {char}"
+  },
+  "pairing": {
+    "heading": "Ghép cặp",
+    "axisHeader": "Trục",
+    "differenceHeader": "Khác biệt",
+    "empty": "Tải cả hai font để so sánh tỷ lệ giữa chúng.",
+    "disclaimer": "Điều này chỉ so sánh tỷ lệ hình học — không đánh giá gu thẩm mỹ. Kết quả \"Khác biệt\" có thể chính là độ tương phản bạn đang tìm kiếm.",
+    "magnitude": {
+      "matched": "Tương đồng",
+      "moderate": "Vừa phải",
+      "distinct": "Khác biệt"
+    }
+  },
+  "about": {
+    "intro": "So sánh tải hai font hoàn toàn trong trình duyệt và xếp chúng cạnh nhau.",
+    "body": "<b>Văn bản</b> cho cảm nhận đọc ở một cỡ chữ và line-height. <b>Waterfall</b> đi qua thang cỡ chữ để bạn thấy chỗ nào font trở nên mảnh ở cỡ nhỏ hay đậm ở cỡ lớn. <b>Ký tự</b> hiển thị mọi glyph mà mỗi font ánh xạ, để bạn thấy ngay khoảng trống độ phủ. <b>Tính năng</b> so sánh các tính năng layout OpenType mà mỗi font định nghĩa — ligature, small caps, stylistic set — và xem trước những tính năng cả hai font cùng có. <b>CSS</b> cho bạn stylesheet dùng ngay cho mỗi font. <b>Lớp phủ</b> chồng một glyph từ cả hai font để bạn thấy trực tiếp khác biệt hình dáng. <b>Dữ liệu</b> so sánh metadata, chỉ số, trục biến thiên và hỗ trợ ngôn ngữ, làm nổi bật chỗ hai font khác nhau. <b>Ghép cặp</b> so sánh x-height, độ đậm và độ rộng giữa hai font và giải thích sự khác biệt sẽ trông như thế nào — không nói cho bạn biết cặp font này có hợp hay không. Gõ văn bản của riêng bạn ở trên để dùng trong tab Văn bản và Waterfall."
+  }
+}

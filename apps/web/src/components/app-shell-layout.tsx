@@ -3,10 +3,12 @@
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Section } from "@astryxdesign/core/Section";
 import { TopNav, TopNavHeading, TopNavItem } from "@astryxdesign/core/TopNav";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { AppInfoSheet } from "@/components/app-info-sheet";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
+import { usePathname } from "@/i18n/navigation";
 
 function BrandWordmark() {
   return (
@@ -20,6 +22,7 @@ function BrandWordmark() {
 
 function AppTopNav() {
   const pathname = usePathname();
+  const t = useTranslations("common.nav");
 
   return (
     <TopNav
@@ -28,18 +31,21 @@ function AppTopNav() {
           <TopNavItem
             href="/"
             isSelected={pathname === "/"}
-            label="Inspector"
+            label={t("inspector")}
           />
           <TopNavItem
             href="/compare"
             isSelected={pathname === "/compare"}
-            label="Compare"
+            label={t("compare")}
           />
         </>
       }
       endContent={
         <>
           <AppInfoSheet />
+          <div className="hidden lg:block">
+            <LocaleSwitcher />
+          </div>
           <ThemeSwitcher />
         </>
       }

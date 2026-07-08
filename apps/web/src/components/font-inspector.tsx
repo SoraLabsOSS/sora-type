@@ -25,6 +25,7 @@ import { summarizeSupport } from "@sora-type/font-engine/font-report";
 import { getLanguageSystems } from "@sora-type/font-engine/opentype-language-systems";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontInspectorColor } from "@/components/font-inspector-color";
 import { FontInspectorLayoutFeatures } from "@/components/font-inspector-layout-features";
@@ -128,10 +129,11 @@ function fileNameFromUrl(url: URL): string {
 }
 
 function RawTablesViewContent({ font }: { font: FontkitFont | null }) {
+  const t = useTranslations("inspector.main");
   if (!font) {
     return (
       <Text color="secondary" type="supporting">
-        Load a font to inspect its raw tables.
+        {t("loadToInspectRawTables")}
       </Text>
     );
   }
@@ -139,24 +141,32 @@ function RawTablesViewContent({ font }: { font: FontkitFont | null }) {
 }
 
 function ColorViewContent({ font }: { font: FontkitFont | null }) {
+  const t = useTranslations("inspector.main");
   if (!font) {
     return (
       <Text color="secondary" type="supporting">
-        Load a font to inspect its color glyphs.
+        {t("loadToInspectColor")}
       </Text>
     );
   }
   return <FontInspectorColor font={font} />;
 }
 
-function buildGlyphsCaption(encodedCodePointCount: number): string {
+function buildGlyphsCaption(
+  encodedCodePointCount: number,
+  t: (key: string, params?: Record<string, string | number | Date>) => string
+): string {
   if (encodedCodePointCount > MAX_GLYPHS) {
-    return `Showing the first ${MAX_GLYPHS} of ${encodedCodePointCount.toLocaleString()} characters. Hover a cell for its Unicode code point.`;
+    return t("captionLimited", {
+      max: MAX_GLYPHS,
+      total: encodedCodePointCount,
+    });
   }
-  return "Showing every character this font maps. Hover a cell for its Unicode code point.";
+  return t("captionAll");
 }
 
 export default function FontInspector() {
+  const t = useTranslations("inspector.main");
   const searchParams = useSearchParams();
   const inspectUrlParam = searchParams.get("inspectUrl");
   const inspectUrl = useMemo(
@@ -264,14 +274,12 @@ export default function FontInspector() {
         setAccuracyDiscrepancies([]);
         setLanguageSystems([]);
         setCssFontFamily(null);
-        setError(
-          "Could not load font from that URL — the source may block cross-origin requests. Try downloading the file and dropping it here instead."
-        );
+        setError(t("urlLoadError"));
       } finally {
         setIsLoading(false);
       }
     },
-    [loadFontFromBuffer]
+    [loadFontFromBuffer, t]
   );
 
   useEffect(() => {
@@ -336,12 +344,12 @@ export default function FontInspector() {
         setAccuracyDiscrepancies([]);
         setLanguageSystems([]);
         setCssFontFamily(null);
-        setError(err instanceof Error ? err.message : "Could not parse font");
+        setError(err instanceof Error ? err.message : t("parseError"));
       } finally {
         setIsLoading(false);
       }
     },
-    [loadFontFromBuffer, loadPlaceholder]
+    [loadFontFromBuffer, loadPlaceholder, t]
   );
 
   const handleLocalFont = useCallback(
@@ -360,10 +368,10 @@ export default function FontInspector() {
         setAccuracyDiscrepancies([]);
         setLanguageSystems([]);
         setCssFontFamily(null);
-        setError(err instanceof Error ? err.message : "Could not parse font");
+        setError(err instanceof Error ? err.message : t("parseError"));
       }
     },
-    [loadFontFromBuffer]
+    [loadFontFromBuffer, t]
   );
 
   async function handleExportPdf() {
@@ -380,7 +388,7 @@ export default function FontInspector() {
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        setError(body?.error ?? "Export failed");
+        setError(body?.error ?? t("exportFailed"));
         return;
       }
       const blob = await response.blob();
@@ -454,7 +462,7 @@ export default function FontInspector() {
               />
             ) : (
               <Text color="secondary" type="supporting">
-                Load a font to test it.
+                {t("loadToTest")}
               </Text>
             )}
           </div>
@@ -472,7 +480,7 @@ export default function FontInspector() {
               />
             ) : (
               <Text color="secondary" type="supporting">
-                Load a font to inspect its layout features.
+                {t("loadToInspectLayoutFeatures")}
               </Text>
             )}
           </div>
@@ -490,7 +498,7 @@ export default function FontInspector() {
               />
             ) : (
               <Text color="secondary" type="supporting">
-                Load a font to generate its stylesheet.
+                {t("loadToGenerateStylesheet")}
               </Text>
             )}
           </div>
@@ -507,7 +515,7 @@ export default function FontInspector() {
               />
             ) : (
               <Text color="secondary" type="supporting">
-                Load a font to see subsetting recommendations.
+                {t("loadToSeeSubsetting")}
               </Text>
             )}
           </div>
@@ -548,18 +556,19 @@ export default function FontInspector() {
                     <VStack gap={2}>
                       <HStack align="center" gap={2} justify="between">
                         <Heading className="font-sans" level={3}>
-                          Glyphs (
-                          {getEncodedCodePointCount(font).toLocaleString()})
+                          {t("glyphsHeading", {
+                            count: getEncodedCodePointCount(font),
+                          })}
                         </Heading>
                         <ToggleButton
                           isPressed={groupGlyphsByCategory}
-                          label="Group by category"
+                          label={t("groupByCategory")}
                           onPressedChange={setGroupGlyphsByCategory}
                           size="sm"
                         />
                       </HStack>
                       <Text color="secondary" type="supporting">
-                        {buildGlyphsCaption(getEncodedCodePointCount(font))}
+                        {buildGlyphsCaption(getEncodedCodePointCount(font), t)}
                       </Text>
                       <GlyphGrid
                         cellMinWidth={GLYPH_CELL_MIN_WIDTH}

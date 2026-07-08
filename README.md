@@ -56,6 +56,24 @@ bun run build:languages
 
 This downloads Hyperglot's data fresh from GitHub, extracts it to a temp dir, and rebuilds the JSON — run it whenever Hyperglot's upstream data should be refreshed.
 
+## Internationalization (i18n)
+
+UI copy is authored once, centrally, and consumed by both apps:
+
+- **`packages/i18n-content`** holds the source strings — `src/locales/{en,vi}/*.json`, one file per feature area (`common`, `about`, `privacy`, `compare`, `inspector`, `extension`). Ships as raw TS/JSON (no build step), same pattern as `font-engine`.
+- **`apps/web`** consumes it directly via `next-intl` (`getMessages()` from the package). Routing: `/` = English (default, unprefixed), `/vi` = Vietnamese (`localePrefix: "as-needed"`).
+- **`apps/extension`** consumes the `extension` namespace via `@wxt-dev/i18n`, but WXT reads locale files from disk at build time (`apps/extension/locales/{en,vi}.json`), not at runtime import — so those two files are **generated**, not hand-edited, and are committed to the repo (same convention as `packages/font-engine/src/data/languages.json`).
+
+To edit extension copy: change `packages/i18n-content/src/locales/{en,vi}/extension.json`, then regenerate:
+
+```bash
+bun run i18n:sync-extension
+```
+
+Web copy (`common`/`about`/`privacy`/`compare`/`inspector`) needs no regeneration step — edit the JSON and it's picked up on next dev/build.
+
+The extension itself has no in-app locale switcher; Chrome/Edge selects `en` or `vi` automatically based on the browser's own UI language setting, falling back to `en` (the extension's `default_locale`) if the browser is set to anything else.
+
 ## Credits
 
 - **OpenType feature defaults and native CSS mappings** (`packages/font-engine/src/opentype-feature-classification.ts`, `packages/font-engine/src/opentype-feature-variants.ts`) — the fixed/on/off feature-state table and the `font-variant-*` equivalents table are ported from [Wakamai Fondue](https://github.com/Wakamai-Fondue/wakamai-fondue-engine)'s `layout-features.js` (Google LLC, Apache License 2.0), trimmed to tag-only lookups.
@@ -81,3 +99,4 @@ Open [http://localhost:3000](http://localhost:3000).
 | `bun run check` | Lint and format check |
 | `bun run fix` | Auto-fix lint and format |
 | `bun run build:languages` | Rebuild `packages/font-engine/src/data/languages.json` from Hyperglot's upstream data |
+| `bun run i18n:sync-extension` | Regenerate `apps/extension/locales/{en,vi}.json` from `packages/i18n-content` after editing extension copy |

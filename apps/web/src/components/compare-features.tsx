@@ -13,6 +13,7 @@ import {
   getOpenTypeFeatureName,
 } from "@sora-type/font-engine/opentype-feature-names";
 import { createFeatureSampleFinder } from "@sora-type/font-engine/opentype-feature-samples";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import type { CompareFontSlot } from "@/components/compare-view";
 
@@ -61,24 +62,25 @@ function buildFeatureRows(
 }
 
 function PresenceCell({ present }: { present: boolean }) {
+  const t = useTranslations("compare.status");
+  const label = present ? t("present") : t("notPresent");
   return (
     <HStack align="center" gap={2}>
-      <StatusDot
-        label={present ? "Present" : "Not present"}
-        variant={present ? "success" : "neutral"}
-      />
-      <Text type="supporting">{present ? "Present" : "Not present"}</Text>
+      <StatusDot label={label} variant={present ? "success" : "neutral"} />
+      <Text type="supporting">{label}</Text>
     </HStack>
   );
 }
 
 function FeatureTable({ rows }: { rows: FeatureRow[] }) {
+  const t = useTranslations("compare");
+
   return (
     <Table<FeatureRow>
       columns={[
         {
           key: "tag",
-          header: "Feature",
+          header: t("features.featureHeader"),
           width: proportional(2, { minWidth: 180 }),
           renderCell: (row) => (
             <Text type="body">
@@ -91,24 +93,26 @@ function FeatureTable({ rows }: { rows: FeatureRow[] }) {
         },
         {
           key: "isRequired",
-          header: "Type",
+          header: t("features.typeHeader"),
           width: proportional(1, { minWidth: 100 }),
           renderCell: (row) => (
             <Token
               color={row.isRequired ? "gray" : "blue"}
-              label={row.isRequired ? "Required" : "Optional"}
+              label={
+                row.isRequired ? t("features.required") : t("features.optional")
+              }
             />
           ),
         },
         {
           key: "inLeft",
-          header: "First font",
+          header: t("fontInput.first"),
           width: proportional(1, { minWidth: 130 }),
           renderCell: (row) => <PresenceCell present={row.inLeft} />,
         },
         {
           key: "inRight",
-          header: "Second font",
+          header: t("fontInput.second"),
           width: proportional(1, { minWidth: 130 }),
           renderCell: (row) => <PresenceCell present={row.inRight} />,
         },
@@ -124,14 +128,15 @@ function FeatureTable({ rows }: { rows: FeatureRow[] }) {
 }
 
 function FeatureDemoColumn({
-  label,
+  slotKey,
   slot,
   tag,
 }: {
-  label: string;
+  slotKey: "left" | "right";
   slot: CompareFontSlot;
   tag: string;
 }) {
+  const t = useTranslations("compare");
   const sample = useMemo(() => {
     const findSample = createFeatureSampleFinder(slot.font);
     return findSample(tag) ?? DEFAULT_DEMO_TEXT;
@@ -140,7 +145,7 @@ function FeatureDemoColumn({
   return (
     <VStack gap={1}>
       <Text color="secondary" type="supporting">
-        {label}
+        {slotKey === "left" ? t("fontInput.first") : t("fontInput.second")}
       </Text>
       <div
         className="rounded-md border border-border bg-body px-3 py-2 text-primary"
@@ -174,10 +179,10 @@ function SharedFeatureDemo({
       </Text>
       <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
         <GridSpan columns={1}>
-          <FeatureDemoColumn label="First font" slot={left} tag={tag} />
+          <FeatureDemoColumn slot={left} slotKey="left" tag={tag} />
         </GridSpan>
         <GridSpan columns={1}>
-          <FeatureDemoColumn label="Second font" slot={right} tag={tag} />
+          <FeatureDemoColumn slot={right} slotKey="right" tag={tag} />
         </GridSpan>
       </Grid>
     </VStack>
@@ -191,6 +196,7 @@ export function CompareFeatures({
   left: CompareFontSlot | null;
   right: CompareFontSlot | null;
 }) {
+  const t = useTranslations("compare");
   const rows = useMemo(() => buildFeatureRows(left, right), [left, right]);
 
   const sharedToggleable = useMemo(
@@ -202,7 +208,7 @@ export function CompareFeatures({
     return (
       <Card padding={4}>
         <Text color="secondary" type="body">
-          Neither font defines any OpenType layout features.
+          {t("features.empty")}
         </Text>
       </Card>
     );
@@ -213,7 +219,7 @@ export function CompareFeatures({
       <Card padding={4}>
         <VStack gap={3}>
           <Heading className="font-sans" level={3}>
-            Layout features ({rows.length})
+            {t("features.heading", { count: rows.length })}
           </Heading>
           <FeatureTable rows={rows} />
         </VStack>
@@ -223,10 +229,10 @@ export function CompareFeatures({
         <Card padding={4}>
           <VStack gap={4}>
             <Heading className="font-sans" level={3}>
-              Shared feature preview
+              {t("features.sharedHeading")}
             </Heading>
             <Text color="secondary" type="supporting">
-              Both fonts support these — shown with the feature turned on.
+              {t("features.sharedHint")}
             </Text>
             {sharedToggleable.map((row) => (
               <SharedFeatureDemo

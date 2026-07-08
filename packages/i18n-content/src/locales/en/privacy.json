@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "title": "Privacy"
+  },
+  "eyebrow": "🛡️ PRIVATE BY DESIGN",
+  "heading": "Your fonts never leave your browser",
+  "body1": "Sora Type parses, previews, and inspects every font entirely on your device. Font files are read with fontkit and shaped with harfbuzzjs, both running client-side in WebAssembly — nothing is sent to a server for inspection, comparison, or preview.",
+  "body2": "This matters if you work with commercial or NDA-protected typefaces: you can drop them in and inspect metadata, glyph coverage, and language support without any file ever touching our infrastructure.",
+  "pdfException": {
+    "heading": "The one exception: PDF export",
+    "body": "Generating a PDF report requires a Node.js PDF engine, which can't run in the browser. When you use \"Export PDF report\", your font file is sent once to our server to render the report, then discarded immediately after the response is returned — it is never logged, stored, or reused."
+  }
+}

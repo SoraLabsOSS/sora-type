@@ -1,0 +1,44 @@
+{
+  "popup": {
+    "title": "Sora Type",
+    "pickerLabel": "Font picker",
+    "pickerHint": "Click any text on the page to inspect its font",
+    "pickerShortcutHint": "Click any text on the page to inspect its font · shortcut: {shortcut}",
+    "openSidePanel": "Open side panel",
+    "openSoraType": "Open Sora Type",
+    "recentFontsHeading": "Recent fonts",
+    "recentFontsEmpty": "No fonts inspected yet — turn on the picker and click some text."
+  },
+  "panel": {
+    "loadFontFile": "Load font file",
+    "loading": "Loading…",
+    "notFound": "Couldn't find this font's file — it may be a system font, or the stylesheet is cross-origin and blocked from being read.",
+    "openInSoraType": "Open in Sora Type →",
+    "close": "Close",
+    "variant": "Variant",
+    "size": "Size",
+    "lineHeight": "Line height",
+    "color": "Color"
+  },
+  "recentFontRow": {
+    "loadRealFontName": "Load real font name",
+    "loading": "Loading…",
+    "tabNotFound": "Open this page in a tab to load its real font.",
+    "notFound": "Couldn't find this font's file (system font, or a cross-origin stylesheet blocked from being read).",
+    "openInSoraType": "Open in Sora Type →"
+  },
+  "sidepanel": {
+    "title": "Sora Type",
+    "pageFonts": {
+      "heading": "Fonts on this page",
+      "rescan": "Rescan",
+      "unavailable": "Can't scan this page.",
+      "scanning": "Scanning…",
+      "empty": "No text found on this page."
+    },
+    "recentlyInspected": {
+      "heading": "Recently inspected",
+      "empty": "No fonts inspected yet."
+    }
+  }
+}

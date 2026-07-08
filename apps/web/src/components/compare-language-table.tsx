@@ -7,15 +7,16 @@ import { proportional, Table } from "@astryxdesign/core/Table";
 import { Text } from "@astryxdesign/core/Text";
 import type { ComparisonMatrix } from "@sora-type/font-engine/font-compare";
 import type { LanguageSupportResult } from "@sora-type/font-engine/font-language-detection";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 type SupportLevel = LanguageSupportResult["support"];
 
-const SUPPORT_LABELS: Record<SupportLevel, string> = {
-  full: "Full",
-  decomposed: "Decomposed",
-  "positioning-failed": "Positioning issue",
-  none: "Not supported",
+const SUPPORT_KEY: Record<SupportLevel, string> = {
+  full: "full",
+  decomposed: "decomposed",
+  "positioning-failed": "positioningFailed",
+  none: "none",
 };
 
 const SUPPORT_VARIANTS: Record<
@@ -37,18 +38,18 @@ interface LanguageRow extends Record<string, unknown> {
 }
 
 function SupportCell({ support }: { support: SupportLevel }) {
+  const t = useTranslations("compare.languageTable.support");
+  const label = t(SUPPORT_KEY[support]);
   return (
     <HStack align="center" gap={2}>
-      <StatusDot
-        label={SUPPORT_LABELS[support]}
-        variant={SUPPORT_VARIANTS[support]}
-      />
-      <Text type="supporting">{SUPPORT_LABELS[support]}</Text>
+      <StatusDot label={label} variant={SUPPORT_VARIANTS[support]} />
+      <Text type="supporting">{label}</Text>
     </HStack>
   );
 }
 
 export function CompareLanguageTable({ matrix }: { matrix: ComparisonMatrix }) {
+  const t = useTranslations("compare");
   const [differencesOnly, setDifferencesOnly] = useState(false);
 
   const rows = useMemo<LanguageRow[]>(() => {
@@ -74,20 +75,20 @@ export function CompareLanguageTable({ matrix }: { matrix: ComparisonMatrix }) {
   return (
     <VStack gap={3}>
       <Switch
-        label="Show differences only"
+        label={t("languageTable.showDifferencesOnly")}
         onChange={setDifferencesOnly}
         value={differencesOnly}
       />
       {filteredRows.length === 0 ? (
         <Text color="secondary" type="supporting">
-          No language differences between these fonts.
+          {t("languageTable.noDifferences")}
         </Text>
       ) : (
         <Table<LanguageRow>
           columns={[
             {
               key: "name",
-              header: "Language",
+              header: t("languageTable.languageHeader"),
               width: proportional(2, { minWidth: 160 }),
               renderCell: (row) => (
                 <Text type="body">
@@ -100,13 +101,13 @@ export function CompareLanguageTable({ matrix }: { matrix: ComparisonMatrix }) {
             },
             {
               key: "leftSupport",
-              header: "First font",
+              header: t("fontInput.first"),
               width: proportional(1, { minWidth: 140 }),
               renderCell: (row) => <SupportCell support={row.leftSupport} />,
             },
             {
               key: "rightSupport",
-              header: "Second font",
+              header: t("fontInput.second"),
               width: proportional(1, { minWidth: 140 }),
               renderCell: (row) => <SupportCell support={row.rightSupport} />,
             },

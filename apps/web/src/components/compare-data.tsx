@@ -12,6 +12,7 @@ import {
   type FontMetadata,
   type FontVariationAxisSummary,
 } from "@sora-type/font-engine/font-metadata";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { CompareLanguageTable } from "@/components/compare-language-table";
 
@@ -96,7 +97,8 @@ function buildAxisRows(
 
 function buildTableRows(
   left: FontMetadata | null,
-  right: FontMetadata | null
+  right: FontMetadata | null,
+  presentLabel: string
 ): DataRow[] {
   const leftTables = new Set(left?.tables ?? []);
   const rightTables = new Set(right?.tables ?? []);
@@ -108,8 +110,8 @@ function buildTableRows(
     return {
       id: `table-${tag}`,
       label: tag,
-      leftValue: inLeft ? "Present" : MISSING_VALUE,
-      rightValue: inRight ? "Present" : MISSING_VALUE,
+      leftValue: inLeft ? presentLabel : MISSING_VALUE,
+      rightValue: inRight ? presentLabel : MISSING_VALUE,
       differs: inLeft !== inRight,
     };
   });
@@ -122,18 +124,20 @@ function DataTable({
   highlightDifferences: boolean;
   rows: DataRow[];
 }) {
+  const t = useTranslations("compare");
+
   return (
     <Table<DataRow>
       columns={[
         {
           key: "label",
-          header: "Field",
+          header: t("data.fieldHeader"),
           width: proportional(2, { minWidth: 140 }),
           renderCell: (row) => <Text type="body">{row.label}</Text>,
         },
         {
           key: "leftValue",
-          header: "First font",
+          header: t("fontInput.first"),
           width: proportional(2, { minWidth: 160 }),
           renderCell: (row) => (
             <Text
@@ -147,7 +151,7 @@ function DataTable({
         },
         {
           key: "rightValue",
-          header: "Second font",
+          header: t("fontInput.second"),
           width: proportional(2, { minWidth: 160 }),
           renderCell: (row) => (
             <Text
@@ -179,6 +183,7 @@ export function CompareData({
   matrix: ComparisonMatrix;
   rightMeta: FontMetadata | null;
 }) {
+  const t = useTranslations("compare");
   const [highlightDifferences, setHighlightDifferences] = useState(true);
 
   const detailRows = useMemo(
@@ -190,8 +195,8 @@ export function CompareData({
     [leftMeta, rightMeta]
   );
   const tableRows = useMemo(
-    () => buildTableRows(leftMeta, rightMeta),
-    [leftMeta, rightMeta]
+    () => buildTableRows(leftMeta, rightMeta, t("status.present")),
+    [leftMeta, rightMeta, t]
   );
 
   return (
@@ -199,7 +204,7 @@ export function CompareData({
       <Card padding={4}>
         <VStack gap={2}>
           <Switch
-            label="Highlight differences"
+            label={t("data.highlightDifferences")}
             onChange={setHighlightDifferences}
             value={highlightDifferences}
           />
@@ -209,7 +214,7 @@ export function CompareData({
       <Card padding={4}>
         <VStack gap={3}>
           <Heading className="font-sans" level={3}>
-            Font details
+            {t("data.fontDetails")}
           </Heading>
           <DataTable
             highlightDifferences={highlightDifferences}
@@ -222,10 +227,10 @@ export function CompareData({
         <Card padding={4}>
           <VStack gap={3}>
             <Heading className="font-sans" level={3}>
-              Variable axes
+              {t("axes.heading")}
             </Heading>
             <Text color="secondary" type="supporting">
-              Shown as min–default–max.
+              {t("data.axesHint")}
             </Text>
             <DataTable
               highlightDifferences={highlightDifferences}
@@ -238,7 +243,7 @@ export function CompareData({
       <Card padding={4}>
         <VStack gap={3}>
           <Heading className="font-sans" level={3}>
-            Tables ({tableRows.length})
+            {t("data.tablesHeading", { count: tableRows.length })}
           </Heading>
           <DataTable
             highlightDifferences={highlightDifferences}
@@ -251,7 +256,7 @@ export function CompareData({
 
       <VStack gap={3}>
         <Heading className="font-sans" level={3}>
-          Language support
+          {t("data.languageSupportHeading")}
         </Heading>
         <CompareLanguageTable matrix={matrix} />
       </VStack>

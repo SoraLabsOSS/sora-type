@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "Giới thiệu"
+  },
+  "hero": {
+    "eyebrow": "🔍 ĐÂY LÀ GÌ",
+    "heading": "Công cụ kiểm tra font chạy hoàn toàn trong trình duyệt"
+  },
+  "intro": "Sora Type đọc file OpenType, TrueType, WOFF và WOFF2 bằng fontkit và tạo hình chữ bằng harfbuzzjs — cả hai đều chạy ở phía client bằng WebAssembly. Thả một font vào để xem metadata, độ phủ glyph, hỗ trợ ngôn ngữ và các tính năng layout OpenType, hoặc tải hai font cạnh nhau để so sánh trực tiếp.",
+  "inspector": {
+    "heading": "Kiểm tra font",
+    "body": "<b>Metadata & glyph</b> hiển thị mọi chỉ số của font, cùng lưới glyph đầy đủ có thể nhóm theo danh mục Unicode. <b>Hỗ trợ ngôn ngữ</b> kiểm tra hành vi tạo hình chữ thực tế, không chỉ độ phủ ký tự — phát hiện các dấu và ký tự tổ hợp render được nhưng đặt sai vị trí. <b>Công cụ thử variable font</b> cung cấp cho bạn thanh trượt trực tiếp cho mọi trục, preset named-instance, optical sizing, và copy CSS <code>font-variation-settings</code> chỉ với một cú nhấp chuột. <b>Tính năng layout & màu sắc</b> cho phép bật/tắt tính năng OpenType trên chữ thật, duyệt các alternate, và kiểm tra bảng màu COLR/CPAL. <b>Bảng dữ liệu thô</b> giải mã mọi bảng OpenType mà font định nghĩa, có thể mở rộng từng trường. Và công cụ <b>CSS, subsetting & PDF</b> tạo stylesheet dùng ngay, ước tính mức tiết kiệm khi subsetting theo nội dung trang thật, hoặc xuất báo cáo PDF đầy đủ."
+  },
+  "compare": {
+    "heading": "So sánh",
+    "body": "Tải hai font cạnh nhau để đọc <b>văn bản và waterfall</b> ở cùng kích thước và line-height, với thanh trượt trục biến thiên riêng cho từng font, cùng bảng so sánh <b>glyph và tính năng OpenType</b> đầy đủ. <b>Lớp phủ glyph</b> chồng đường viền của cả hai font lên nhau với đường baseline, x-height và cap-height để bạn thấy trực tiếp sự khác biệt hình dáng. Mọi chỉ số, trục biến thiên và bảng OpenType đều có <b>so sánh song song</b>, và <b>chẩn đoán ghép cặp</b> giải thích x-height, độ đậm, độ rộng, độ nghiêng và kiểu serif/sans-serif của hai font khác nhau ra sao bằng ngôn ngữ dễ hiểu — không phải điểm tương thích bịa ra, chỉ là sự thật và hình dung thực tế."
+  },
+  "privateByDesign": {
+    "eyebrow": "🛡️ RIÊNG TƯ THEO THIẾT KẾ",
+    "body": "File font của bạn không bao giờ rời khỏi thiết bị để kiểm tra hay so sánh. Ngoại lệ duy nhất là xuất PDF, cần một PDF engine phía server và file sẽ bị xóa ngay sau khi render xong.",
+    "readPolicy": "Đọc chính sách quyền riêng tư đầy đủ"
+  },
+  "footer": {
+    "credit": "Thực hiện bởi Axyl · mã nguồn mở",
+    "portfolio": "Portfolio",
+    "sourceCode": "Mã nguồn",
+    "reportIssue": "Báo lỗi"
+  }
+}

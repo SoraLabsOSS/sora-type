@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { i18n } from "#i18n";
 import type { LoadFontSummaryResult } from "@/utils/load-font-summary";
 import { sendMessage } from "@/utils/messaging";
 import type { RecentFont } from "@/utils/storage";
@@ -49,21 +50,20 @@ export function RecentFontRow({ font }: { font: RecentFont }) {
           onClick={load}
           type="button"
         >
-          Load real font name
+          {i18n.t("recentFontRow.loadRealFontName")}
         </button>
       )}
       {state.status === "loading" && (
-        <p className="text-[#888] text-xs">Loading…</p>
+        <p className="text-[#888] text-xs">{i18n.t("recentFontRow.loading")}</p>
       )}
       {state.status === "tab-not-found" && (
         <p className="text-[#888] text-xs">
-          Open this page in a tab to load its real font.
+          {i18n.t("recentFontRow.tabNotFound")}
         </p>
       )}
       {state.status === "not-found" && (
         <p className="text-[#888] text-xs">
-          Couldn't find this font's file (system font, or a cross-origin
-          stylesheet blocked from being read).
+          {i18n.t("recentFontRow.notFound")}
         </p>
       )}
       {state.status === "error" && (
@@ -86,7 +86,7 @@ export function RecentFontRow({ font }: { font: RecentFont }) {
             rel="noopener noreferrer"
             target="_blank"
           >
-            Open in Sora Type →
+            {i18n.t("recentFontRow.openInSoraType")}
           </a>
         </div>
       )}

@@ -4,6 +4,7 @@ import { Card } from "@astryxdesign/core/Card";
 import { HStack, VStack } from "@astryxdesign/core/Layout";
 import { Slider } from "@astryxdesign/core/Slider";
 import { Heading, Text } from "@astryxdesign/core/Text";
+import { useTranslations } from "next-intl";
 
 const DEFAULT_FONT_SIZE = 32;
 const PREVIEW_MIN_HEIGHT = "8.5rem";
@@ -25,11 +26,13 @@ export function FontInspectorPreview({
   previewText,
   weightLabel,
 }: FontInspectorPreviewProps) {
+  const t = useTranslations("inspector.preview");
+
   return (
     <Card className="min-w-0 bg-surface" padding={4}>
       <VStack gap={3}>
         <Heading className="font-sans" level={3}>
-          Live preview
+          {t("heading")}
         </Heading>
 
         <VStack gap={2}>
@@ -51,7 +54,7 @@ export function FontInspectorPreview({
           <Slider
             formatValue={(value) => `${value}px`}
             isLabelHidden
-            label="Font size"
+            label={t("fontSize")}
             max={96}
             min={12}
             onChange={onFontSizeChange}
@@ -62,7 +65,7 @@ export function FontInspectorPreview({
         <textarea
           className="w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors placeholder:text-secondary focus-visible:border-accent"
           onChange={(event) => onPreviewTextChange(event.target.value)}
-          placeholder="Type something to preview…"
+          placeholder={t("placeholder")}
           spellCheck={false}
           style={{
             fontFamily: cssFontFamily ?? "inherit",

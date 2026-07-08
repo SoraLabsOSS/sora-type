@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { i18n } from "#i18n";
 import { RecentFontRow } from "@/components/recent-font-row";
 import type { LoadFontSummaryResult } from "@/utils/load-font-summary";
 import { sendMessage } from "@/utils/messaging";
@@ -45,16 +46,15 @@ function PageFontRow({
           onClick={load}
           type="button"
         >
-          Load real font name
+          {i18n.t("recentFontRow.loadRealFontName")}
         </button>
       )}
       {state.status === "loading" && (
-        <p className="text-[#888] text-xs">Loading…</p>
+        <p className="text-[#888] text-xs">{i18n.t("recentFontRow.loading")}</p>
       )}
       {state.status === "not-found" && (
         <p className="text-[#888] text-xs">
-          Couldn't find this font's file (system font, or a cross-origin
-          stylesheet blocked from being read).
+          {i18n.t("recentFontRow.notFound")}
         </p>
       )}
       {state.status === "error" && (
@@ -77,7 +77,7 @@ function PageFontRow({
             rel="noopener noreferrer"
             target="_blank"
           >
-            Open in Sora Type →
+            {i18n.t("recentFontRow.openInSoraType")}
           </a>
         </div>
       )}
@@ -147,25 +147,33 @@ function PageFonts() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium text-sm">Fonts on this page</h2>
+        <h2 className="font-medium text-sm">
+          {i18n.t("sidepanel.pageFonts.heading")}
+        </h2>
         <button
           className="cursor-pointer text-[#646cff] text-xs hover:underline disabled:cursor-default disabled:opacity-50"
           disabled={tabId === null || status === "loading"}
           onClick={() => tabId !== null && scan(tabId)}
           type="button"
         >
-          Rescan
+          {i18n.t("sidepanel.pageFonts.rescan")}
         </button>
       </div>
 
       {status === "unavailable" && (
-        <p className="text-[#888] text-sm">Can't scan this page.</p>
+        <p className="text-[#888] text-sm">
+          {i18n.t("sidepanel.pageFonts.unavailable")}
+        </p>
       )}
       {status === "loading" && fonts.length === 0 && (
-        <p className="text-[#888] text-sm">Scanning…</p>
+        <p className="text-[#888] text-sm">
+          {i18n.t("sidepanel.pageFonts.scanning")}
+        </p>
       )}
       {status === "ready" && fonts.length === 0 && (
-        <p className="text-[#888] text-sm">No text found on this page.</p>
+        <p className="text-[#888] text-sm">
+          {i18n.t("sidepanel.pageFonts.empty")}
+        </p>
       )}
       {fonts.length > 0 && tabId !== null && (
         <ul className="flex flex-col gap-2 overflow-y-auto">
@@ -188,9 +196,13 @@ function RecentlyInspected() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <h2 className="font-medium text-sm">Recently inspected</h2>
+      <h2 className="font-medium text-sm">
+        {i18n.t("sidepanel.recentlyInspected.heading")}
+      </h2>
       {fonts.length === 0 ? (
-        <p className="text-[#888] text-sm">No fonts inspected yet.</p>
+        <p className="text-[#888] text-sm">
+          {i18n.t("sidepanel.recentlyInspected.empty")}
+        </p>
       ) : (
         <ul className="flex flex-col gap-2 overflow-y-auto">
           {fonts.map((font) => (
@@ -208,7 +220,7 @@ function RecentlyInspected() {
 function App() {
   return (
     <div className="flex h-screen flex-col gap-4 p-4">
-      <h1 className="font-semibold text-lg">Sora Type</h1>
+      <h1 className="font-semibold text-lg">{i18n.t("sidepanel.title")}</h1>
       <PageFonts />
       <RecentlyInspected />
     </div>

@@ -22,7 +22,8 @@ export function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export function summarizeScripts(
-  detected: (LanguageSupportResult & { rowKey: string })[]
+  detected: (LanguageSupportResult & { rowKey: string })[],
+  t: (key: string, params?: Record<string, string | number | Date>) => string
 ): string | undefined {
   const scripts = [...new Set(detected.map((lang) => lang.script))].toSorted();
   if (scripts.length === 0) {
@@ -31,7 +32,7 @@ export function summarizeScripts(
   if (scripts.length <= 6) {
     return scripts.join(", ");
   }
-  return `${scripts.slice(0, 6).join(", ")} +${scripts.length - 6} more`;
+  return `${scripts.slice(0, 6).join(", ")} ${t("summary.moreScripts", { count: scripts.length - 6 })}`;
 }
 
 export interface OneLinerSummaryInput {
@@ -44,45 +45,46 @@ export interface OneLinerSummaryInput {
 }
 
 /** A FontSummary.vue-style natural-language sentence describing this font. */
-export function buildOneLinerSummary({
-  featureCount,
-  isColor,
-  isHinted,
-  isVariable,
-  languageCount,
-  outlineFormats,
-}: OneLinerSummaryInput): string {
+export function buildOneLinerSummary(
+  {
+    featureCount,
+    isColor,
+    isHinted,
+    isVariable,
+    languageCount,
+    outlineFormats,
+  }: OneLinerSummaryInput,
+  locale: string,
+  t: (key: string, params?: Record<string, string | number | Date>) => string
+): string {
   const traits: string[] = [];
   if (isHinted) {
-    traits.push("has hinting");
+    traits.push(t("summary.hasHinting"));
   }
   if (outlineFormats.length > 0) {
-    traits.push(`uses ${outlineFormats.join(" + ")} outlines`);
+    traits.push(
+      t("summary.usesOutlines", { formats: outlineFormats.join(" + ") })
+    );
   }
   if (isVariable) {
-    traits.push("is a variable font");
+    traits.push(t("summary.isVariable"));
   }
   if (isColor) {
-    traits.push("has color glyphs");
+    traits.push(t("summary.hasColorGlyphs"));
   }
   if (featureCount > 0) {
-    traits.push(
-      `has ${featureCount} OpenType feature${featureCount === 1 ? "" : "s"}`
-    );
+    traits.push(t("summary.hasFeatures", { count: featureCount }));
   }
   if (languageCount > 0) {
-    traits.push(
-      `supports ${languageCount} language${languageCount === 1 ? "" : "s"}`
-    );
+    traits.push(t("summary.supportsLanguages", { count: languageCount }));
   }
 
   if (traits.length === 0) {
     return "";
   }
-  if (traits.length === 1) {
-    return `This font ${traits[0]}.`;
-  }
-  const last = traits.at(-1);
-  const rest = traits.slice(0, -1);
-  return `This font ${rest.join(", ")}, and ${last}.`;
+  const list = new Intl.ListFormat(locale, {
+    style: "long",
+    type: "conjunction",
+  }).format(traits);
+  return t("summary.sentence", { list });
 }

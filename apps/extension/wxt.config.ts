@@ -3,13 +3,14 @@ import { defineConfig } from "wxt";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-  modules: ["@wxt-dev/module-react"],
+  modules: ["@wxt-dev/module-react", "@wxt-dev/i18n/module"],
   vite: () => ({
     plugins: [tailwindcss()],
   }),
   manifest: ({ browser }) => ({
     name: "Sora Type",
     description: "Identify and inspect fonts on any web page.",
+    default_locale: "en",
     permissions: [
       "storage",
       "tabs",

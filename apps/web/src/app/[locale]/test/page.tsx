@@ -56,6 +56,9 @@ import type { ReactNode } from "react";
 import { BottomSheetDemo } from "@/components/sora-ui/demo/bottom-sheet-demo";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 
+// biome-ignore lint/suspicious/noEmptyBlockStatements: shared no-op handler for this static kitchen-sink showcase page
+const noop = () => {};
+
 const tw = {
   card: "min-w-0 border-transparent bg-body text-primary",
   checkoutStack: "min-w-0 w-full",
@@ -299,10 +302,13 @@ function StorePreview({
                 <Card height="100%" key={p.name} padding={0}>
                   <VStack className={tw.cardStack} gap={0}>
                     <AspectRatio ratio={1}>
+                      {/* biome-ignore lint/performance/noImgElement: remote CDN demo image, sized by the AspectRatio wrapper */}
                       <img
                         alt={p.name}
                         className={tw.productImage}
+                        height={400}
                         src={images[PRODUCT_IMAGE_KEYS[i]]}
+                        width={400}
                       />
                     </AspectRatio>
                     <div className={tw.cardBody}>
@@ -327,7 +333,7 @@ function StorePreview({
                             label="Quantity"
                             max={99}
                             min={1}
-                            onChange={() => {}}
+                            onChange={noop}
                             size="sm"
                             value={1}
                           />
@@ -361,7 +367,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
         <VStack className={tw.checkoutStack} gap={3}>
           <TextInput
             label="Email"
-            onChange={() => {}}
+            onChange={noop}
             placeholder="you@studio.com"
             size="lg"
             value=""
@@ -370,7 +376,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
           <RadioList
             description="Delivery time may vary based on location and availability."
             label="Shipping method"
-            onChange={() => {}}
+            onChange={noop}
             value="economy"
           >
             <RadioListItem
@@ -413,7 +419,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
               <SelectableCard
                 isSelected={true}
                 label="Pay with card"
-                onChange={() => {}}
+                onChange={noop}
                 padding={3}
               >
                 <VStack
@@ -430,7 +436,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
               <SelectableCard
                 isSelected={false}
                 label="Pay with Apple Pay"
-                onChange={() => {}}
+                onChange={noop}
                 padding={3}
               >
                 <VStack
@@ -447,7 +453,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
               <SelectableCard
                 isSelected={false}
                 label="Pay with Google Pay"
-                onChange={() => {}}
+                onChange={noop}
                 padding={3}
               >
                 <VStack
@@ -466,7 +472,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
 
           <TextInput
             label="Card number"
-            onChange={() => {}}
+            onChange={noop}
             placeholder="1234 1234 1234 1234"
             size="lg"
             startIcon={<CreditCard size={16} />}
@@ -476,14 +482,14 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
           <Grid columns={isMobile ? 1 : { minWidth: 90, max: 2 }} gap={2}>
             <TextInput
               label="Expiry"
-              onChange={() => {}}
+              onChange={noop}
               placeholder="MM / YY"
               size="lg"
               value=""
             />
             <TextInput
               label="CVC"
-              onChange={() => {}}
+              onChange={noop}
               placeholder="123"
               size="lg"
               value=""
@@ -492,7 +498,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
 
           <Selector
             label="Country"
-            onChange={() => {}}
+            onChange={noop}
             options={[
               { value: "us", label: "United States" },
               { value: "ca", label: "Canada" },
@@ -509,7 +515,7 @@ function CheckoutCard({ isMobile }: { isMobile: boolean }) {
         <CheckboxInput
           description="Pay faster on Studio and everywhere Link is accepted."
           label="Securely save my information for 1-click checkout"
-          onChange={() => {}}
+          onChange={noop}
           value={true}
         />
 
@@ -659,8 +665,8 @@ function ChatCard() {
               variant="ghost"
             />
           }
-          onChange={() => {}}
-          onSubmit={() => {}}
+          onChange={noop}
+          onSubmit={noop}
           placeholder="Ask Studio AI…"
           sendActions={
             <Button
@@ -733,7 +739,7 @@ const ACTIVITY: ActivityRow[] = [
 
 function formatAmount(amount: number): string {
   const sign = amount < 0 ? "−" : "+";
-  return sign + "$" + Math.abs(amount).toLocaleString();
+  return `${sign}$${Math.abs(amount).toLocaleString()}`;
 }
 
 function LatestActivityCard({ isMobile }: { isMobile: boolean }) {
@@ -793,7 +799,10 @@ function LatestActivityCard({ isMobile }: { isMobile: boolean }) {
   );
 }
 
-type TagSpec = { label: string; variant: ShowcaseBadgeVariant };
+interface TagSpec {
+  label: string;
+  variant: ShowcaseBadgeVariant;
+}
 
 export interface InventoryRow extends Record<string, unknown> {
   available: number;
@@ -882,8 +891,8 @@ function SelectCell({ row }: { row: InventoryRow }) {
   return (
     <CheckboxInput
       isLabelHidden
-      label={"Select " + row.name}
-      onChange={() => {}}
+      label={`Select ${row.name}`}
+      onChange={noop}
       value={row.selected}
     />
   );
@@ -900,7 +909,14 @@ function ItemCell({
   return (
     <HStack gap={3} vAlign="center">
       {thumbnailSrc ? (
-        <img alt="" className={tw.thumbnail} src={thumbnailSrc} />
+        // biome-ignore lint/performance/noImgElement: remote CDN demo image, fixed small thumbnail size
+        <img
+          alt=""
+          className={tw.thumbnail}
+          height={40}
+          src={thumbnailSrc}
+          width={40}
+        />
       ) : (
         <div aria-hidden="true" className={tw.thumbnailFallback}>
           {row.thumbnailFallback}
@@ -979,7 +995,7 @@ function InventoryCard({
             className={tw.searchInput}
             isLabelHidden
             label="Search inventory"
-            onChange={() => {}}
+            onChange={noop}
             placeholder="Type and hit enter…"
             startIcon={<Search size={16} />}
             value=""
@@ -998,7 +1014,7 @@ function InventoryCard({
             <Selector
               isLabelHidden
               label="Categories"
-              onChange={() => {}}
+              onChange={noop}
               options={["Wearables", "Audio", "Bags", "Drinkware", "Home"]}
               placeholder="Categories"
               size="sm"
@@ -1008,7 +1024,7 @@ function InventoryCard({
             <Selector
               isLabelHidden
               label="Locations"
-              onChange={() => {}}
+              onChange={noop}
               options={[
                 "Aisle 1",
                 "Aisle 2",
@@ -1025,7 +1041,7 @@ function InventoryCard({
             <Selector
               isLabelHidden
               label="Tags"
-              onChange={() => {}}
+              onChange={noop}
               options={[
                 "New",
                 "Popular",
@@ -1065,7 +1081,7 @@ function InventoryCard({
         <div className={tw.inventoryBannerWrap}>
           <Banner
             status="warning"
-            title={lowStockCount + " items are running low"}
+            title={`${lowStockCount} items are running low`}
           />
         </div>
       )}

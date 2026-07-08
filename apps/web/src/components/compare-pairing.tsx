@@ -9,6 +9,7 @@ import {
   buildPairingInsights,
   type PairingMagnitude,
 } from "@sora-type/font-engine/font-pairing";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import type { CompareFontSlot } from "@/components/compare-view";
 
@@ -18,10 +19,10 @@ const PREVIEW_TEXT = "Type with confidence";
 const BODY_TEXT =
   "The two fonts above are set at a typical heading and body size so you can see how the difference actually reads.";
 
-const MAGNITUDE_LABEL: Record<PairingMagnitude, string> = {
-  matched: "Matched",
-  moderate: "Moderate",
-  distinct: "Distinct",
+const MAGNITUDE_KEY: Record<PairingMagnitude, string> = {
+  matched: "matched",
+  moderate: "moderate",
+  distinct: "distinct",
 };
 
 const MAGNITUDE_COLOR: Record<PairingMagnitude, "default" | "gray" | "blue"> = {
@@ -40,18 +41,21 @@ interface InsightRow extends Record<string, unknown> {
 }
 
 function InsightTable({ rows }: { rows: InsightRow[] }) {
+  const t = useTranslations("compare");
+  const magnitudeT = useTranslations("compare.pairing.magnitude");
+
   return (
     <Table<InsightRow>
       columns={[
         {
           key: "label",
-          header: "Axis",
+          header: t("pairing.axisHeader"),
           width: proportional(1, { minWidth: 130 }),
           renderCell: (row) => <Text type="body">{row.label}</Text>,
         },
         {
           key: "leftValue",
-          header: "First font",
+          header: t("fontInput.first"),
           width: proportional(1, { minWidth: 110 }),
           renderCell: (row) => (
             <Text className="tabular-nums" type="body">
@@ -61,7 +65,7 @@ function InsightTable({ rows }: { rows: InsightRow[] }) {
         },
         {
           key: "rightValue",
-          header: "Second font",
+          header: t("fontInput.second"),
           width: proportional(1, { minWidth: 110 }),
           renderCell: (row) => (
             <Text className="tabular-nums" type="body">
@@ -71,13 +75,13 @@ function InsightTable({ rows }: { rows: InsightRow[] }) {
         },
         {
           key: "magnitude",
-          header: "Difference",
+          header: t("pairing.differenceHeader"),
           width: proportional(2, { minWidth: 220 }),
           renderCell: (row) => (
             <VStack gap={1}>
               <Token
                 color={MAGNITUDE_COLOR[row.magnitude]}
-                label={MAGNITUDE_LABEL[row.magnitude]}
+                label={magnitudeT(MAGNITUDE_KEY[row.magnitude])}
               />
               <Text color="secondary" type="supporting">
                 {row.note}
@@ -103,6 +107,7 @@ export function ComparePairing({
   left: CompareFontSlot | null;
   right: CompareFontSlot | null;
 }) {
+  const t = useTranslations("compare.pairing");
   const rows = useMemo<InsightRow[]>(
     () =>
       left && right
@@ -117,7 +122,7 @@ export function ComparePairing({
     return (
       <Card padding={4}>
         <Text color="secondary" type="body">
-          Load both fonts to see how their proportions compare.
+          {t("empty")}
         </Text>
       </Card>
     );
@@ -127,8 +132,7 @@ export function ComparePairing({
     <VStack gap={4}>
       <Card padding={4}>
         <Text color="secondary" type="supporting">
-          This compares geometric proportions only — it can't judge taste. A
-          "Distinct" result may be exactly the contrast you're going for.
+          {t("disclaimer")}
         </Text>
       </Card>
 
@@ -160,7 +164,7 @@ export function ComparePairing({
         <VStack gap={3}>
           <HStack align="center" gap={2} justify="between">
             <Heading className="font-sans" level={3}>
-              Pairing
+              {t("heading")}
             </Heading>
           </HStack>
           <InsightTable rows={rows} />

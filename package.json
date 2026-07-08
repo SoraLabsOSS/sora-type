@@ -14,6 +14,7 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "build:languages": "turbo run build:languages",
+    "i18n:sync-extension": "turbo run i18n:sync-extension",
     "check:font": "turbo run check:font --",
     "test:e2e": "turbo run test:e2e",
     "prepare": "lefthook install"

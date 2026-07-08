@@ -9,6 +9,7 @@ import {
   VStack,
 } from "@astryxdesign/core/Layout";
 import { Heading, Text } from "@astryxdesign/core/Text";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
 interface LocalFontAccessHelpDialogProps {
@@ -33,8 +34,10 @@ export function LocalFontAccessHelpDialog({
   isOpen,
   onOpenChange,
 }: LocalFontAccessHelpDialogProps) {
+  const t = useTranslations("inspector.localFontPicker.helpDialog");
   const browser = useMemo(() => getBrowserLabel(), []);
   const settingsPath = useMemo(() => getSettingsPath(browser), [browser]);
+  const boldTag = { b: (chunks: React.ReactNode) => <strong>{chunks}</strong> };
 
   return (
     <Dialog
@@ -48,48 +51,35 @@ export function LocalFontAccessHelpDialog({
         content={
           <LayoutContent>
             <VStack gap={3}>
-              <Text type="body">
-                If you chose <strong>Block</strong> when the browser asked for
-                local font access, it will not show that prompt again. Turn the
-                permission back on in your browser&apos;s site settings, then
-                reload this page.
-              </Text>
+              <Text type="body">{t.rich("blockedExplanation", boldTag)}</Text>
 
               <VStack gap={2}>
                 <Heading className="font-sans" level={4}>
-                  Quick fix (address bar)
+                  {t("quickFixHeading")}
                 </Heading>
                 <ol className="list-decimal space-y-2 pl-5 text-primary text-sm leading-relaxed">
-                  <li>
-                    Click the <strong>lock</strong> or <strong>tune</strong>{" "}
-                    icon to the left of the address bar on this site.
-                  </li>
-                  <li>
-                    Open <strong>Site settings</strong> (or{" "}
-                    <strong>Permissions</strong>).
-                  </li>
-                  <li>
-                    Find <strong>Local fonts</strong> and set it to{" "}
-                    <strong>Allow</strong>.
-                  </li>
-                  <li>Reload this page, then search installed fonts again.</li>
+                  <li>{t.rich("step1", boldTag)}</li>
+                  <li>{t.rich("step2", boldTag)}</li>
+                  <li>{t.rich("step3", boldTag)}</li>
+                  <li>{t("step4")}</li>
                 </ol>
               </VStack>
 
               <VStack gap={2}>
                 <Heading className="font-sans" level={4}>
-                  From {browser} settings
+                  {t("fromBrowserSettingsHeading", { browser })}
                 </Heading>
                 <Text type="body">
-                  Open <code className="text-sm">{settingsPath}</code>, find
-                  this site in the list, and set <strong>Local fonts</strong> to{" "}
-                  <strong>Allow</strong>. Reload afterward.
+                  {t.rich("fromBrowserSettingsBody", {
+                    ...boldTag,
+                    code: (chunks) => <code className="text-sm">{chunks}</code>,
+                    settingsPath,
+                  })}
                 </Text>
               </VStack>
 
               <Text color="secondary" type="supporting">
-                Local font picking only works in Chromium browsers ({browser} /
-                Edge). You can always upload a font file instead.
+                {t("chromiumOnlyNote", { browser })}
               </Text>
             </VStack>
           </LayoutContent>
@@ -97,7 +87,7 @@ export function LocalFontAccessHelpDialog({
         footer={
           <LayoutFooter hasDivider>
             <Button
-              label="Got it"
+              label={t("gotIt")}
               onClick={() => onOpenChange(false)}
               variant="primary"
             />
@@ -106,8 +96,8 @@ export function LocalFontAccessHelpDialog({
         header={
           <DialogHeader
             onOpenChange={onOpenChange}
-            subtitle="The browser won't ask again after you block access."
-            title="Enable local font access"
+            subtitle={t("subtitle")}
+            title={t("title")}
           />
         }
       />

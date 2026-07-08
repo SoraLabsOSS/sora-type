@@ -5,6 +5,7 @@ import { Grid, GridSpan } from "@astryxdesign/core/Grid";
 import { VStack } from "@astryxdesign/core/Layout";
 import { Switch } from "@astryxdesign/core/Switch";
 import { Heading, Text } from "@astryxdesign/core/Text";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { FontSlotState } from "@/components/compare-view";
 import GlyphGrid, {
@@ -15,31 +16,35 @@ import GlyphGrid, {
 const COMPARE_GRID_COLUMNS = { minWidth: 320, max: 2 } as const;
 const GLYPH_CELL_MIN_WIDTH = 64;
 
-function buildGlyphsCaption(encodedCodePointCount: number): string {
-  if (encodedCodePointCount > MAX_GLYPHS) {
-    return `Showing the first ${MAX_GLYPHS} of ${encodedCodePointCount.toLocaleString()} characters.`;
-  }
-  return "Showing every character this font maps.";
-}
-
 function CharactersColumn({
   groupByCategory,
-  label,
+  slot,
   state,
 }: {
   groupByCategory: boolean;
-  label: string;
+  slot: "left" | "right";
   state: FontSlotState;
 }) {
+  const t = useTranslations("compare");
+
   if (!state.font) {
     return (
       <Card height="100%" minHeight={240} padding={4}>
         <Text color="secondary" type="supporting">
-          {label} font not loaded yet.
+          {slot === "left" ? t("notLoaded.first") : t("notLoaded.second")}
         </Text>
       </Card>
     );
   }
+
+  const encodedCodePointCount = getEncodedCodePointCount(state.font);
+  const caption =
+    encodedCodePointCount > MAX_GLYPHS
+      ? t("characters.captionLimited", {
+          max: MAX_GLYPHS,
+          total: encodedCodePointCount,
+        })
+      : t("characters.captionAll");
 
   return (
     <Card height="100%" padding={4}>
@@ -48,7 +53,7 @@ function CharactersColumn({
           {state.meta?.fullName}
         </Heading>
         <Text color="secondary" type="supporting">
-          {buildGlyphsCaption(getEncodedCodePointCount(state.font))}
+          {caption}
         </Text>
         <GlyphGrid
           cellMinWidth={GLYPH_CELL_MIN_WIDTH}
@@ -67,13 +72,14 @@ export function CompareCharacters({
   left: FontSlotState;
   right: FontSlotState;
 }) {
+  const t = useTranslations("compare");
   const [groupByCategory, setGroupByCategory] = useState(false);
 
   return (
     <VStack gap={4}>
       <Card padding={4}>
         <Switch
-          label="Group by category"
+          label={t("characters.groupByCategory")}
           onChange={setGroupByCategory}
           value={groupByCategory}
         />
@@ -82,14 +88,14 @@ export function CompareCharacters({
         <GridSpan columns={1}>
           <CharactersColumn
             groupByCategory={groupByCategory}
-            label="First"
+            slot="left"
             state={left}
           />
         </GridSpan>
         <GridSpan columns={1}>
           <CharactersColumn
             groupByCategory={groupByCategory}
-            label="Second"
+            slot="right"
             state={right}
           />
         </GridSpan>

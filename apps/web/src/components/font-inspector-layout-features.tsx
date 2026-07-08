@@ -20,6 +20,7 @@ import {
 import { createFeatureSampleFinder } from "@sora-type/font-engine/opentype-feature-samples";
 import type { Font as FontkitFont } from "fontkit";
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 const DEFAULT_DEMO_TEXT =
@@ -44,6 +45,7 @@ function AlternatePreviewRow({
   demoText,
   tag,
 }: AlternatePreviewRowProps) {
+  const t = useTranslations("inspector.layoutFeatures");
   const [expanded, setExpanded] = useState(false);
   const shown =
     expanded || alternateCount <= ALTERNATE_PREVIEW_CAP
@@ -70,7 +72,9 @@ function AlternatePreviewRow({
       {alternateCount > ALTERNATE_PREVIEW_CAP && (
         <Button
           label={
-            expanded ? "Show fewer alternates" : `Show all ${alternateCount}`
+            expanded
+              ? t("showFewerAlternates")
+              : t("showAllAlternates", { count: alternateCount })
           }
           onClick={() => setExpanded((prev) => !prev)}
           size="sm"
@@ -106,6 +110,7 @@ export function FontInspectorLayoutFeatures({
   font,
   metadata,
 }: FontInspectorLayoutFeaturesProps) {
+  const t = useTranslations("inspector.layoutFeatures");
   const requiredFeatures = useMemo(
     () => metadata.openTypeFeatures.filter((tag) => !isToggleableFeature(tag)),
     [metadata.openTypeFeatures]
@@ -162,7 +167,7 @@ export function FontInspectorLayoutFeatures({
   if (metadata.openTypeFeatures.length === 0) {
     return (
       <Text color="secondary" type="supporting">
-        This font doesn't define any OpenType layout features.
+        {t("empty")}
       </Text>
     );
   }
@@ -173,11 +178,10 @@ export function FontInspectorLayoutFeatures({
         <Card className="bg-surface" padding={4}>
           <VStack gap={2}>
             <Heading className="font-sans" level={4}>
-              Required layout features
+              {t("requiredHeading")}
             </Heading>
             <Text color="secondary" type="supporting">
-              These are always applied by the text-shaping engine — you can't
-              turn them off, and aren't meant to.
+              {t("requiredDescription")}
             </Text>
             <VStack gap={1}>
               {requiredFeatures.map((tag) => (
@@ -199,11 +203,10 @@ export function FontInspectorLayoutFeatures({
         <Card className="bg-surface" padding={4}>
           <VStack gap={2}>
             <Heading className="font-sans" level={4}>
-              Optional layout features
+              {t("optionalHeading")}
             </Heading>
             <Text color="secondary" type="supporting">
-              Some are on by default and can be turned off; others are off by
-              default and can be turned on.
+              {t("optionalDescription")}
             </Text>
 
             <VStack gap={5}>
@@ -236,7 +239,7 @@ export function FontInspectorLayoutFeatures({
                           getOpenTypeFeatureName(tag)}
                       </Text>
                       <ToggleButtonGroup
-                        label={`${tag} state`}
+                        label={t("stateLabel", { tag })}
                         onChange={(value) =>
                           setFeatureState(tag, value as FeatureState | null)
                         }
@@ -244,9 +247,9 @@ export function FontInspectorLayoutFeatures({
                         type="single"
                         value={state}
                       >
-                        <ToggleButton label="Default" value="default" />
-                        <ToggleButton label="On" value="on" />
-                        <ToggleButton label="Off" value="off" />
+                        <ToggleButton label={t("default")} value="default" />
+                        <ToggleButton label={t("on")} value="on" />
+                        <ToggleButton label={t("off")} value="off" />
                       </ToggleButtonGroup>
                     </HStack>
 
@@ -255,7 +258,7 @@ export function FontInspectorLayoutFeatures({
                         <Selector
                           hasClear={false}
                           isLabelHidden
-                          label={`${tag} alternate`}
+                          label={t("alternateLabel", { tag })}
                           onChange={(value) =>
                             setAlternateSelection(tag, Number(value))
                           }
@@ -307,7 +310,7 @@ export function FontInspectorLayoutFeatures({
                               <Copy size={14} />
                             )
                           }
-                          label={`Copy ${tag} CSS`}
+                          label={t("copyFeatureCss", { tag })}
                           onClick={() => copyFeatureCss(tag, css)}
                           size="sm"
                           variant="ghost"

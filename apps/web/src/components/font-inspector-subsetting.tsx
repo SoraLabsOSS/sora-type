@@ -13,6 +13,7 @@ import {
 import { computeUnicodeRanges } from "@sora-type/font-engine/unicode-ranges";
 import type { Font as FontkitFont } from "fontkit";
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { getEncodedCodePointCount } from "@/components/glyph-grid";
 
@@ -31,6 +32,7 @@ export function FontInspectorSubsetting({
   fileName,
   font,
 }: FontInspectorSubsettingProps) {
+  const t = useTranslations("inspector.subsetting");
   const [text, setText] = useState("");
   const [copiedRanges, setCopiedRanges] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState(false);
@@ -71,24 +73,22 @@ export function FontInspectorSubsetting({
       <Card className="bg-surface" padding={4}>
         <VStack gap={3}>
           <Heading className="font-sans" level={3}>
-            Subsetting
+            {t("heading")}
           </Heading>
           <Text color="secondary" type="supporting">
-            Paste the actual text your site uses (a page's content, not a sample
-            sentence) to see how much of this font you really need, and get a
-            ready command to cut the rest.
+            {t("description")}
           </Text>
 
           <textarea
             className="min-h-32 w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors placeholder:text-secondary focus-visible:border-accent"
             onChange={(event) => setText(event.target.value)}
-            placeholder="Paste your site copy here…"
+            placeholder={t("placeholder")}
             spellCheck={false}
             value={text}
           />
           {text.length === 0 && (
             <Text color="secondary" type="supporting">
-              Nothing pasted yet — the stats below reflect an empty selection.
+              {t("emptyNotice")}
             </Text>
           )}
         </VStack>
@@ -97,23 +97,23 @@ export function FontInspectorSubsetting({
       <Card className="bg-surface" padding={4}>
         <VStack gap={2}>
           <Text>
-            <strong className="tabular-nums">{supportedUsedCount}</strong> of{" "}
-            <strong className="tabular-nums">
-              {encodedCodePointCount.toLocaleString()}
-            </strong>{" "}
-            characters used
+            {t.rich("usageSummary", {
+              strong: (chunks) => (
+                <strong className="tabular-nums">{chunks}</strong>
+              ),
+              used: supportedUsedCount,
+              total: encodedCodePointCount,
+            })}
             {usedCount > 0 && (
               <span className="text-secondary">
                 {" "}
-                (~{percentUsed.toFixed(1)}% of the font's character set)
+                {t("percentUsed", { percent: percentUsed.toFixed(1) })}
               </span>
             )}
           </Text>
           {usedCount > 0 && (
             <Text color="secondary" type="supporting">
-              This is a rough estimate — actual file size savings also depend on
-              each glyph's outline complexity, hinting, and any layout tables
-              (kerning, ligatures) pyftsubset keeps for the glyphs it retains.
+              {t("estimateNote")}
             </Text>
           )}
         </VStack>
@@ -121,14 +121,14 @@ export function FontInspectorSubsetting({
 
       {unsupportedCodePoints.length > 0 && (
         <Banner
-          description={`This font has no glyph for: ${unsupportedCodePoints
-            .slice(0, 20)
-            .map((cp) => `"${String.fromCodePoint(cp)}" (${toHex(cp)})`)
-            .join(
-              ", "
-            )}${unsupportedCodePoints.length > 20 ? ", …" : ""}. Those characters will render with a fallback font regardless of subsetting.`}
+          description={t("unsupportedDescription", {
+            chars: `${unsupportedCodePoints
+              .slice(0, 20)
+              .map((cp) => `"${String.fromCodePoint(cp)}" (${toHex(cp)})`)
+              .join(", ")}${unsupportedCodePoints.length > 20 ? ", …" : ""}`,
+          })}
           status="warning"
-          title="Some characters aren't in this font"
+          title={t("unsupportedTitle")}
         />
       )}
 
@@ -136,7 +136,7 @@ export function FontInspectorSubsetting({
         <Card className="bg-surface" padding={4}>
           <VStack gap={3}>
             <Heading className="font-sans" level={4}>
-              unicode-range
+              {t("unicodeRangeHeading")}
             </Heading>
             <HStack
               gap={2}
@@ -147,7 +147,7 @@ export function FontInspectorSubsetting({
               </pre>
               <IconButton
                 icon={copiedRanges ? <Check size={14} /> : <Copy size={14} />}
-                label="Copy unicode-range"
+                label={t("copyUnicodeRange")}
                 onClick={() => copy(unicodeRanges.join(", "), setCopiedRanges)}
                 size="sm"
                 variant="ghost"
@@ -155,11 +155,12 @@ export function FontInspectorSubsetting({
             </HStack>
 
             <Heading className="font-sans" level={4}>
-              Subset command
+              {t("commandHeading")}
             </Heading>
             <Text color="secondary" type="supporting">
-              Requires <code>fonttools</code> (
-              <code>pip install fonttools brotli</code>) to run locally.
+              {t.rich("commandNote", {
+                code: (chunks) => <code>{chunks}</code>,
+              })}
             </Text>
             <HStack
               gap={2}
@@ -173,7 +174,7 @@ export function FontInspectorSubsetting({
               </pre>
               <IconButton
                 icon={copiedCommand ? <Check size={14} /> : <Copy size={14} />}
-                label="Copy subset command"
+                label={t("copyCommand")}
                 onClick={() => copy(command, setCopiedCommand)}
                 size="sm"
                 variant="ghost"

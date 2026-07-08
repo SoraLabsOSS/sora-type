@@ -25,6 +25,7 @@ import {
 } from "@sora-type/font-engine/font-variable-instances";
 import type { Font as FontkitFont } from "fontkit";
 import { Check, Copy, Layers } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 const DEFAULT_TESTER_TEXT =
@@ -61,6 +62,7 @@ function LanguageAndPaletteRow({
   setLanguage,
   setPaletteIndex,
 }: LanguageAndPaletteRowProps) {
+  const t = useTranslations("inspector.tester");
   // Some languages have multiple orthographies (e.g. distinct scripts) that
   // share the same ISO 639-3 code; since the `lang` attribute only cares
   // about the code, keep just the first entry per code to avoid duplicate
@@ -94,13 +96,9 @@ function LanguageAndPaletteRow({
     <HStack gap={3}>
       {uniqueLanguages.length > 0 && (
         <Selector
-          description={
-            hasLayoutDeclared
-              ? "Layers icon = this font's GSUB/GPOS layout tables declare explicit support for that language."
-              : undefined
-          }
+          description={hasLayoutDeclared ? t("languageDescription") : undefined}
           hasClear
-          label="Language"
+          label={t("languageLabel")}
           onChange={setLanguage}
           options={uniqueLanguages.map((lang) => ({
             value: lang.code,
@@ -109,24 +107,24 @@ function LanguageAndPaletteRow({
               <Layers size={14} />
             ) : undefined,
           }))}
-          placeholder="None"
+          placeholder={t("languagePlaceholder")}
           value={language}
         />
       )}
       {palettes.length > 0 && (
         <Selector
           hasClear
-          label="Color palette"
+          label={t("colorPaletteLabel")}
           onChange={(value) =>
             setPaletteIndex(value === null ? null : Number(value))
           }
           options={palettes.map((p) => ({
             value: String(p.index),
             label: p.name
-              ? `${p.name} (Palette ${p.index})`
-              : `Palette ${p.index}`,
+              ? t("paletteOption", { name: p.name, index: p.index })
+              : t("paletteOptionUnnamed", { index: p.index }),
           }))}
-          placeholder="Default"
+          placeholder={t("colorPalettePlaceholder")}
           value={paletteIndex === null ? null : String(paletteIndex)}
         />
       )}
@@ -141,6 +139,7 @@ export function FontInspectorTester({
   languageSystems,
   metadata,
 }: FontInspectorTesterProps) {
+  const t = useTranslations("inspector.tester");
   const [text, setText] = useState(DEFAULT_TESTER_TEXT);
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
   const [textAlign, setTextAlign] = useState<TextAlign>("left");
@@ -227,19 +226,19 @@ export function FontInspectorTester({
         <VStack gap={3}>
           <HStack align="center" gap={2} justify="between">
             <Heading className="font-sans" level={3}>
-              Tester
+              {t("heading")}
             </Heading>
             <ToggleButtonGroup
-              label="Text alignment"
+              label={t("textAlignment")}
               onChange={(value) => setTextAlign((value as TextAlign) ?? "left")}
               size="sm"
               type="single"
               value={textAlign}
             >
-              <ToggleButton label="Left" value="left" />
-              <ToggleButton label="Center" value="center" />
-              <ToggleButton label="Right" value="right" />
-              <ToggleButton label="Justify" value="justify" />
+              <ToggleButton label={t("left")} value="left" />
+              <ToggleButton label={t("center")} value="center" />
+              <ToggleButton label={t("right")} value="right" />
+              <ToggleButton label={t("justify")} value="justify" />
             </ToggleButtonGroup>
           </HStack>
 
@@ -259,7 +258,7 @@ export function FontInspectorTester({
               style={{ alignItems: "center", justifyContent: "space-between" }}
             >
               <Text color="secondary" type="supporting">
-                Font size
+                {t("fontSize")}
               </Text>
               <Text
                 className="tabular-nums"
@@ -272,7 +271,7 @@ export function FontInspectorTester({
             <Slider
               formatValue={(value) => `${value}px`}
               isLabelHidden
-              label="Font size"
+              label={t("fontSize")}
               max={144}
               min={8}
               onChange={setFontSize}
@@ -307,14 +306,16 @@ export function FontInspectorTester({
         <Card className="bg-surface" padding={4}>
           <VStack gap={3}>
             <Heading className="font-sans" level={4}>
-              Variable axes
+              {t("variableAxesHeading")}
             </Heading>
 
             {namedInstances.length > 0 && (
               <Selector
-                description={`This font has ${namedInstances.length} preconfigured instance${namedInstances.length === 1 ? "" : "s"}.`}
+                description={t("instanceDescription", {
+                  count: namedInstances.length,
+                })}
                 hasClear
-                label="Instance"
+                label={t("instanceLabel")}
                 onChange={selectInstance}
                 options={namedInstances.map((instance) => instance.name)}
                 value={activeInstanceName}
@@ -323,8 +324,8 @@ export function FontInspectorTester({
 
             {hasOpticalSize && (
               <Switch
-                description="Let the browser pick the optical-size axis value from the rendered font size, instead of the slider below."
-                label="Automatic optical sizing"
+                description={t("autoOpticalSizingDescription")}
+                label={t("autoOpticalSizing")}
                 onChange={setAutoOpticalSizing}
                 value={autoOpticalSizing}
               />
@@ -378,11 +379,11 @@ export function FontInspectorTester({
               <VStack gap={1}>
                 <HStack align="center" gap={2} justify="between">
                   <Text color="secondary" type="supporting">
-                    Generated CSS
+                    {t("generatedCss")}
                   </Text>
                   <IconButton
                     icon={copied ? <Check size={14} /> : <Copy size={14} />}
-                    label="Copy CSS to clipboard"
+                    label={t("copyCss")}
                     onClick={copyGeneratedCss}
                     size="sm"
                     variant="ghost"
@@ -397,7 +398,7 @@ export function FontInspectorTester({
             {namedInstances.length > 0 && (
               <VStack gap={2}>
                 <Switch
-                  label="Show instance previews"
+                  label={t("showInstancePreviews")}
                   onChange={setShowInstancePreviews}
                   value={showInstancePreviews}
                 />

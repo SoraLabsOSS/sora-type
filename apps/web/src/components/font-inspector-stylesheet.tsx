@@ -16,6 +16,7 @@ import { getFeatureVariantCss } from "@sora-type/font-engine/opentype-feature-va
 import { computeUnicodeRanges } from "@sora-type/font-engine/unicode-ranges";
 import type { Font as FontkitFont } from "fontkit";
 import { Check, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 interface FontInspectorStylesheetProps {
@@ -36,6 +37,7 @@ export function FontInspectorStylesheet({
   font,
   metadata,
 }: FontInspectorStylesheetProps) {
+  const t = useTranslations("inspector.stylesheet");
   const [namespace, setNamespace] = useState(() =>
     slugify(metadata.familyName)
   );
@@ -117,53 +119,50 @@ export function FontInspectorStylesheet({
       <Card className="bg-surface" padding={4}>
         <VStack gap={3}>
           <Heading className="font-sans" level={3}>
-            CSS
+            {t("heading")}
           </Heading>
           <Text color="secondary" type="supporting">
-            A ready-to-use stylesheet for this font — <code>@font-face</code>, a
-            toggleable class per OpenType layout feature, and a class per
-            variable-font instance. Classes use CSS custom properties so you can
-            combine several at once without them overriding each other.
+            {t.rich("description", { code: (chunks) => <code>{chunks}</code> })}
           </Text>
 
           <TextInput
-            description="Prefix for every generated class and custom property, so multiple fonts' CSS don't collide."
-            label="Namespace"
+            description={t("namespaceDescription")}
+            label={t("namespaceLabel")}
             onChange={setNamespace}
             value={namespace}
           />
 
           <VStack gap={2}>
             <Switch
-              label="Include unicode-range"
+              label={t("includeUnicodeRange")}
               onChange={setIncludeUnicodeRange}
               value={includeUnicodeRange}
             />
             <Switch
-              label="Include on-by-default features"
+              label={t("includeDefaultOnFeatures")}
               onChange={setIncludeDefaultOnFeatures}
               value={includeDefaultOnFeatures}
             />
             {hasNativeAxis && (
               <Switch
-                description="Map wght/wdth to font-weight/font-stretch instead of raw font-variation-settings."
-                label="Use native font-weight/font-stretch"
+                description={t("useNativeAxisDescription")}
+                label={t("useNativeAxis")}
                 onChange={setUseNativeAxisCss}
                 value={useNativeAxisCss}
               />
             )}
             {hasVariantFeature && (
               <Switch
-                description="Skip font-variant-* properties (e.g. small-caps) and always use font-feature-settings."
-                label="Use font-feature-settings only"
+                description={t("fontFeatureSettingsOnlyDescription")}
+                label={t("fontFeatureSettingsOnly")}
                 onChange={setFontFeatureSettingsOnly}
                 value={fontFeatureSettingsOnly}
               />
             )}
             {hasPalettes && (
               <Switch
-                description="Adds @font-palette-values and a toggle class for each extra CPAL color palette."
-                label="Include color palettes"
+                description={t("includeColorPalettesDescription")}
+                label={t("includeColorPalettes")}
                 onChange={setIncludeColorPalettes}
                 value={includeColorPalettes}
               />
@@ -173,13 +172,13 @@ export function FontInspectorStylesheet({
           <HStack gap={2} style={{ justifyContent: "flex-end" }}>
             <IconButton
               icon={copied ? <Check size={14} /> : <Copy size={14} />}
-              label="Copy stylesheet"
+              label={t("copyStylesheet")}
               onClick={copyCss}
               size="sm"
               variant="ghost"
             />
             <Button
-              label="Download stylesheet"
+              label={t("downloadStylesheet")}
               onClick={downloadCss}
               size="sm"
               variant="secondary"

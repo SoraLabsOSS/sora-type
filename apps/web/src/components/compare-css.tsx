@@ -4,27 +4,33 @@ import { Card } from "@astryxdesign/core/Card";
 import { Grid, GridSpan } from "@astryxdesign/core/Grid";
 import { VStack } from "@astryxdesign/core/Layout";
 import { Text } from "@astryxdesign/core/Text";
+import { useTranslations } from "next-intl";
 import type { CompareFontSlot } from "@/components/compare-view";
 import { FontInspectorStylesheet } from "@/components/font-inspector-stylesheet";
 
 const COMPARE_GRID_COLUMNS = { minWidth: 360, max: 2 } as const;
 
 function CssColumn({
-  label,
   slot,
+  slotKey,
 }: {
-  label: string;
   slot: CompareFontSlot | null;
+  slotKey: "left" | "right";
 }) {
+  const t = useTranslations("compare");
+
   if (!slot) {
     return (
       <Card height="100%" minHeight={240} padding={4}>
         <Text color="secondary" type="supporting">
-          {label} font not loaded yet.
+          {slotKey === "left" ? t("notLoaded.first") : t("notLoaded.second")}
         </Text>
       </Card>
     );
   }
+
+  const label =
+    slotKey === "left" ? t("fontInput.first") : t("fontInput.second");
 
   return (
     <VStack gap={2}>
@@ -50,10 +56,10 @@ export function CompareCss({
   return (
     <Grid columns={COMPARE_GRID_COLUMNS} gap={4}>
       <GridSpan columns={1}>
-        <CssColumn label="First font" slot={left} />
+        <CssColumn slot={left} slotKey="left" />
       </GridSpan>
       <GridSpan columns={1}>
-        <CssColumn label="Second font" slot={right} />
+        <CssColumn slot={right} slotKey="right" />
       </GridSpan>
     </Grid>
   );

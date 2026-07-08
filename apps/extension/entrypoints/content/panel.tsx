@@ -1,6 +1,7 @@
 import { motion, useDragControls } from "motion/react";
 import type { RefObject } from "react";
 import { useState } from "react";
+import { i18n } from "#i18n";
 import type { FontDetectionResult } from "@/utils/font-detect";
 import { loadFontSummary } from "@/utils/load-font-summary";
 import { clampToViewport } from "@/utils/viewport";
@@ -34,22 +35,17 @@ function FontFileSection({ family }: { family: string }) {
         onClick={load}
         type="button"
       >
-        Load font file
+        {i18n.t("panel.loadFontFile")}
       </button>
     );
   }
 
   if (state.status === "loading") {
-    return <p className="text-white/50">Loading…</p>;
+    return <p className="text-white/50">{i18n.t("panel.loading")}</p>;
   }
 
   if (state.status === "not-found") {
-    return (
-      <p className="text-white/50">
-        Couldn't find this font's file — it may be a system font, or the
-        stylesheet is cross-origin and blocked from being read.
-      </p>
-    );
+    return <p className="text-white/50">{i18n.t("panel.notFound")}</p>;
   }
 
   if (state.status === "error") {
@@ -70,7 +66,7 @@ function FontFileSection({ family }: { family: string }) {
         rel="noopener noreferrer"
         target="_blank"
       >
-        Open in Sora Type →
+        {i18n.t("panel.openInSoraType")}
       </a>
     </div>
   );
@@ -120,7 +116,7 @@ export function Panel({
       >
         <p className="font-semibold text-sm">{result.family}</p>
         <button
-          aria-label="Close"
+          aria-label={i18n.t("panel.close")}
           className="cursor-pointer text-white/60 hover:text-white"
           onClick={onClose}
           type="button"
@@ -129,13 +125,13 @@ export function Panel({
         </button>
       </div>
       <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-white/70">
-        <dt>Variant</dt>
+        <dt>{i18n.t("panel.variant")}</dt>
         <dd className="text-right text-white">{result.variant}</dd>
-        <dt>Size</dt>
+        <dt>{i18n.t("panel.size")}</dt>
         <dd className="text-right text-white">{result.size}</dd>
-        <dt>Line height</dt>
+        <dt>{i18n.t("panel.lineHeight")}</dt>
         <dd className="text-right text-white">{result.lineHeight}</dd>
-        <dt>Color</dt>
+        <dt>{i18n.t("panel.color")}</dt>
         <dd className="flex items-center justify-end gap-1 text-white">
           <span
             className="inline-block h-3 w-3 rounded-full border border-white/30"

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Playwrite_US_Trad } from "next/font/google";
+import { notFound } from "next/navigation";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { DeferredAnalytics } from "@/components/analytics-deferred";
 import { AppLinkProvider } from "@/components/app-link-provider";
 import { AppShellLayout } from "@/components/app-shell-layout";
 import { MatchaThemeProvider } from "@/components/theme/theme-provider";
+import { routing } from "@/i18n/routing";
 import {
   getMetadataBaseUrl,
   SITE_DESCRIPTION,
@@ -11,7 +14,7 @@ import {
   SITE_URL,
 } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme/theme-init-script";
-import "./globals.css";
+import "../globals.css";
 import "@/themes/matcha/matcha.css";
 import "@/themes/matcha/registry-bridge.css";
 
@@ -69,16 +72,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
+
   return (
     <html
       className={`${dmSans.variable} ${playwriteUsTrad.variable} ${jetbrainsMono.variable} h-full antialiased`}
       data-astryx-theme="matcha"
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
     >
       <head>
@@ -88,12 +98,14 @@ export default function RootLayout({
         />
       </head>
       <body className="flex h-dvh flex-col overflow-hidden">
-        <AppLinkProvider>
-          <MatchaThemeProvider>
-            <AppShellLayout>{children}</AppShellLayout>
-          </MatchaThemeProvider>
-        </AppLinkProvider>
-        <DeferredAnalytics />
+        <NextIntlClientProvider>
+          <AppLinkProvider>
+            <MatchaThemeProvider>
+              <AppShellLayout>{children}</AppShellLayout>
+            </MatchaThemeProvider>
+          </AppLinkProvider>
+          <DeferredAnalytics />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

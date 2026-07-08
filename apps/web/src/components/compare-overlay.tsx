@@ -6,6 +6,7 @@ import { HStack, VStack } from "@astryxdesign/core/Layout";
 import { Switch } from "@astryxdesign/core/Switch";
 import { Text } from "@astryxdesign/core/Text";
 import type { Font as FontkitFont } from "fontkit";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 const REFERENCE_UPM = 1000;
@@ -174,6 +175,7 @@ function OverlayCell({
   showMetricGuides: boolean;
   viewBox: OverlayViewBox;
 }) {
+  const t = useTranslations("compare.overlay");
   const codePoint = char.codePointAt(0) ?? 0;
   const leftPath = left ? getPathData(left, codePoint) : null;
   const rightPath = right ? getPathData(right, codePoint) : null;
@@ -182,17 +184,17 @@ function OverlayCell({
 
   const missing: string[] = [];
   if (left && !leftPath) {
-    missing.push("first font");
+    missing.push(t("missingFirst"));
   }
   if (right && !rightPath) {
-    missing.push("second font");
+    missing.push(t("missingSecond"));
   }
 
   return (
     <VStack gap={1}>
       <div className="relative flex aspect-square flex-col overflow-hidden rounded-md border border-border bg-body">
         <svg
-          aria-label={`Glyph overlay for ${char}`}
+          aria-label={t("ariaLabel", { char })}
           className="h-full w-full p-2"
           role="img"
           viewBox={`${viewBox.minX} ${viewBox.minY} ${viewBox.width} ${viewBox.height}`}
@@ -250,7 +252,7 @@ function OverlayCell({
       </Text>
       {missing.length > 0 ? (
         <Text className="text-center" color="secondary" type="supporting">
-          Missing in {missing.join(" and ")}
+          {t("missingIn", { fonts: missing.join(` ${t("and")} `) })}
         </Text>
       ) : null}
     </VStack>
@@ -264,6 +266,7 @@ export function CompareOverlay({
   left: FontkitFont | null;
   right: FontkitFont | null;
 }) {
+  const t = useTranslations("compare");
   const [input, setInput] = useState(DEFAULT_OVERLAY_TEXT);
   const [showMetricGuides, setShowMetricGuides] = useState(true);
   const chars = useMemo(() => parseOverlayChars(input), [input]);
@@ -277,8 +280,7 @@ export function CompareOverlay({
       <Card padding={4}>
         <VStack gap={3}>
           <Text color="secondary" type="supporting">
-            Type up to {MAX_OVERLAY_CHARS} characters to overlay their outlines
-            from both fonts.
+            {t("overlay.instructions", { max: MAX_OVERLAY_CHARS })}
           </Text>
           <input
             className="w-full rounded-md border border-border bg-body px-4 py-2 text-primary outline-none transition-colors focus-visible:border-accent"
@@ -291,19 +293,19 @@ export function CompareOverlay({
             <HStack align="center" gap={2}>
               <span className="inline-block h-3 w-3 rounded-full bg-blue-vivid" />
               <Text color="secondary" type="supporting">
-                First font
+                {t("fontInput.first")}
               </Text>
             </HStack>
             <HStack align="center" gap={2}>
               <span className="inline-block h-3 w-3 rounded-full bg-red-vivid" />
               <Text color="secondary" type="supporting">
-                Second font
+                {t("fontInput.second")}
               </Text>
             </HStack>
           </HStack>
           <Switch
-            description="Dashed lines mark each font's own x-height and cap-height; the solid line is the shared baseline."
-            label="Show metric guides"
+            description={t("overlay.metricGuidesDescription")}
+            label={t("overlay.showMetricGuides")}
             onChange={setShowMetricGuides}
             value={showMetricGuides}
           />
@@ -313,7 +315,7 @@ export function CompareOverlay({
       {chars.length === 0 || !viewBox ? (
         <Card padding={4}>
           <Text color="secondary" type="body">
-            Type at least one character above to see its outline overlay.
+            {t("overlay.emptyState")}
           </Text>
         </Card>
       ) : (

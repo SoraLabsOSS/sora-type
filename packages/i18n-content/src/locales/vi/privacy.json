@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "title": "Quyền riêng tư"
+  },
+  "eyebrow": "🛡️ RIÊNG TƯ THEO THIẾT KẾ",
+  "heading": "Font của bạn không bao giờ rời khỏi trình duyệt",
+  "body1": "Sora Type phân tích, xem trước và kiểm tra mọi font hoàn toàn trên thiết bị của bạn. File font được đọc bằng fontkit và tạo hình chữ bằng harfbuzzjs, cả hai đều chạy phía client bằng WebAssembly — không có gì được gửi lên server để kiểm tra, so sánh hay xem trước.",
+  "body2": "Điều này quan trọng nếu bạn làm việc với font thương mại hoặc font có NDA: bạn có thể thả vào và kiểm tra metadata, độ phủ glyph, hỗ trợ ngôn ngữ mà không có file nào chạm vào hạ tầng của chúng tôi.",
+  "pdfException": {
+    "heading": "Ngoại lệ duy nhất: xuất PDF",
+    "body": "Tạo báo cáo PDF cần một PDF engine Node.js, không thể chạy trong trình duyệt. Khi bạn dùng \"Export PDF report\", file font của bạn được gửi một lần lên server để render báo cáo, sau đó bị xóa ngay sau khi trả kết quả — không bao giờ được ghi log, lưu trữ hay tái sử dụng."
+  }
+}

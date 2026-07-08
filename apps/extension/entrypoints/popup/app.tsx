@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { i18n } from "#i18n";
 import { RecentFontRow } from "@/components/recent-font-row";
 import { pickerEnabled, type RecentFont, recentFonts } from "@/utils/storage";
 
@@ -26,10 +27,13 @@ function PickerToggle() {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-[#88888833] p-3">
       <span className="flex flex-col">
-        <span className="font-medium text-sm">Font picker</span>
+        <span className="font-medium text-sm">
+          {i18n.t("popup.pickerLabel")}
+        </span>
         <span className="text-[#888] text-xs">
-          Click any text on the page to inspect its font
-          {shortcut ? ` · shortcut: ${shortcut}` : null}
+          {shortcut
+            ? i18n.t("popup.pickerShortcutHint", { shortcut })
+            : i18n.t("popup.pickerHint")}
         </span>
       </span>
       <input
@@ -52,9 +56,7 @@ function RecentFontsList() {
 
   if (fonts.length === 0) {
     return (
-      <p className="text-[#888] text-sm">
-        No fonts inspected yet — turn on the picker and click some text.
-      </p>
+      <p className="text-[#888] text-sm">{i18n.t("popup.recentFontsEmpty")}</p>
     );
   }
 
@@ -83,7 +85,7 @@ function openSoraType() {
 function App() {
   return (
     <div className="flex w-80 flex-col gap-4 p-4">
-      <h1 className="font-semibold text-lg">Sora Type</h1>
+      <h1 className="font-semibold text-lg">{i18n.t("popup.title")}</h1>
 
       <PickerToggle />
 
@@ -93,19 +95,21 @@ function App() {
           onClick={openSidePanel}
           type="button"
         >
-          Open side panel
+          {i18n.t("popup.openSidePanel")}
         </button>
         <button
           className="cursor-pointer rounded-lg border border-transparent bg-[#f9f9f9] px-4 py-2 font-medium text-sm transition-colors hover:border-[#646cff] focus-visible:outline-4 focus-visible:outline-[#646cff] dark:bg-[#1a1a1a]"
           onClick={openSoraType}
           type="button"
         >
-          Open Sora Type
+          {i18n.t("popup.openSoraType")}
         </button>
       </div>
 
       <div className="flex flex-col gap-2">
-        <h2 className="font-medium text-sm">Recent fonts</h2>
+        <h2 className="font-medium text-sm">
+          {i18n.t("popup.recentFontsHeading")}
+        </h2>
         <RecentFontsList />
       </div>
     </div>
