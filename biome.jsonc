@@ -6,11 +6,11 @@
     "ultracite/biome/next"
   ],
   "files": {
-    "includes": ["!!src/data"]
+    "includes": ["!!packages/font-engine/src/data"]
   },
   "overrides": [
     {
-      "includes": ["src/lib/engine/**"],
+      "includes": ["packages/font-engine/src/engine/**"],
       "linter": {
         "rules": {
           "performance": {
@@ -20,7 +20,7 @@
       }
     },
     {
-      "includes": ["src/themes/matcha/**"],
+      "includes": ["apps/web/src/themes/matcha/**"],
       "linter": {
         "rules": {
           "style": {
@@ -31,7 +31,7 @@
       }
     },
     {
-      "includes": ["src/app/test/page.tsx"],
+      "includes": ["apps/web/src/app/test/page.tsx"],
       "linter": {
         "rules": {
           "correctness": {

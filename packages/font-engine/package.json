@@ -1,0 +1,29 @@
+{
+  "name": "@sora-type/font-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/engine/index.ts",
+    "./*": "./src/*.ts",
+    "./stubs/*": "./src/stubs/*"
+  },
+  "scripts": {
+    "build:languages": "bun run scripts/build-language-db.ts",
+    "check:font": "bun run bin/sora-type-check.ts",
+    "benchmark:accuracy": "bun run scripts/benchmark-accuracy.ts"
+  },
+  "dependencies": {
+    "fontkit": "^2.0.4",
+    "harfbuzzjs": "^1.4.0",
+    "pdfkit": "^0.19.1"
+  },
+  "devDependencies": {
+    "@types/fontkit": "^2.0.9",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20",
+    "@types/pdfkit": "^0.17.6",
+    "js-yaml": "^5.2.1",
+    "typescript": "^5"
+  }
+}

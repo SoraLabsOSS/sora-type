@@ -37,7 +37,9 @@ MORE CLI:
 <!-- SORA-TYPE:START -->
 # Sora Type
 
-Browser-based font inspector — drop OTF/TTF/WOFF/WOFF2, analyze locally. Font logic lives in `src/lib/`; language data in `src/data/languages.json` (build via `bun run build:languages`). Everything runs client-side; no backend.
+Browser-based font inspector — drop OTF/TTF/WOFF/WOFF2, analyze locally. Everything runs client-side; no backend.
+
+Turborepo monorepo: `apps/web` is the Next.js app; `packages/font-engine` (`@sora-type/font-engine`) is the framework-agnostic font-parsing/language-detection logic, extracted so it can be reused by the future browser extension (Launch 2). Language data lives at `packages/font-engine/src/data/languages.json` (build via `bun run build:languages`). `apps/web` consumes it via `@sora-type/font-engine` / `@sora-type/font-engine/<module>` — never reach into `packages/font-engine/src/*` with a relative import.
 
 ## UI stack
 
@@ -50,9 +52,9 @@ Browser-based font inspector — drop OTF/TTF/WOFF/WOFF2, analyze locally. Font 
 | Shell, data UI, forms, tables | Astryx |
 | Simple fade/slide | CSS transition or `motion` directly |
 | Bespoke motion (sheet drag, text morph, reveal) | Sora UI primitive in `components/sora-ui/` |
-| Font parsing / language detection | `src/lib/*` — no UI library |
+| Font parsing / language detection | `packages/font-engine/*` (`@sora-type/font-engine`) — no UI library |
 
-Keep `components/sora-ui/` thin (effects/sheets only). Sora UI tokens bridge to Matcha via `src/themes/matcha/registry-bridge.css` when a Sora UI component is added.
+Keep `components/sora-ui/` thin (effects/sheets only). Sora UI tokens bridge to Matcha via `apps/web/src/themes/matcha/registry-bridge.css` when a Sora UI component is added.
 
 ## Product context (for scope decisions)
 
