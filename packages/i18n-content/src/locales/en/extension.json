@@ -22,6 +22,7 @@
   },
   "recentFontRow": {
     "loadRealFontName": "Load real font name",
+    "loadInSidePanel": "Load in side panel",
     "loading": "Loading…",
     "tabNotFound": "Open this page in a tab to load its real font.",
     "notFound": "Couldn't find this font's file (system font, or a cross-origin stylesheet blocked from being read).",

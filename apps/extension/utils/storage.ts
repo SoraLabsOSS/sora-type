@@ -20,3 +20,9 @@ export const recentFonts = storage.defineItem<RecentFont[]>(
   "local:recentFonts",
   { fallback: [] }
 );
+
+/** One-shot tab to show when the side panel opens (e.g. from popup "Load"). */
+export const sidePanelInitialTab = storage.defineItem<"page" | "recent" | null>(
+  "session:sidePanelInitialTab",
+  { fallback: null }
+);

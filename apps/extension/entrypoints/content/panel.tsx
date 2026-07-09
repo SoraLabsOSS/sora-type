@@ -1,7 +1,10 @@
+import { X } from "lucide-react";
 import { motion, useDragControls } from "motion/react";
 import type { RefObject } from "react";
 import { useState } from "react";
 import { i18n } from "#i18n";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import type { FontDetectionResult } from "@/utils/font-detect";
 import { loadFontSummary } from "@/utils/load-font-summary";
 import { clampToViewport } from "@/utils/viewport";
@@ -30,18 +33,25 @@ function FontFileSection({ family }: { family: string }) {
 
   if (state.status === "idle") {
     return (
-      <button
-        className="cursor-pointer self-start text-[#8ab4ff] hover:underline"
+      <Button
+        className="h-auto self-start px-0 text-[#8ab4ff] hover:text-[#8ab4ff]/80"
         onClick={load}
+        size="xs"
         type="button"
+        variant="link"
       >
         {i18n.t("panel.loadFontFile")}
-      </button>
+      </Button>
     );
   }
 
   if (state.status === "loading") {
-    return <p className="text-white/50">{i18n.t("panel.loading")}</p>;
+    return (
+      <div className="flex items-center gap-2 text-white/50">
+        <Spinner className="size-3 text-white/50" />
+        {i18n.t("panel.loading")}
+      </div>
+    );
   }
 
   if (state.status === "not-found") {
@@ -115,14 +125,16 @@ export function Panel({
         onPointerDown={(event) => dragControls.start(event)}
       >
         <p className="font-semibold text-sm">{result.family}</p>
-        <button
+        <Button
           aria-label={i18n.t("panel.close")}
-          className="cursor-pointer text-white/60 hover:text-white"
+          className="text-white/60 hover:bg-white/10 hover:text-white"
           onClick={onClose}
+          size="icon-xs"
           type="button"
+          variant="ghost"
         >
-          &times;
-        </button>
+          <X className="size-3.5" />
+        </Button>
       </div>
       <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-white/70">
         <dt>{i18n.t("panel.variant")}</dt>

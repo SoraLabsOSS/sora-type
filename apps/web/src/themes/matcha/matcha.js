@@ -48,7 +48,7 @@ export const matchaTheme = {
     "--text-heading-6-weight": "var(--font-weight-semibold)",
     "--text-heading-6-leading": "1.6",
     "--text-body-size": "var(--font-size-base)",
-    "--text-body-weight": "var(--font-weight-normal)",
+    "--text-body-weight": "var(--font-weight-medium)",
     "--text-body-leading": "1.5",
     "--text-large-size": "var(--font-size-lg)",
     "--text-large-weight": "var(--font-weight-semibold)",
@@ -60,7 +60,7 @@ export const matchaTheme = {
     "--text-code-weight": "var(--font-weight-normal)",
     "--text-code-leading": "1.5",
     "--text-supporting-size": "var(--font-size-sm)",
-    "--text-supporting-weight": "var(--font-weight-normal)",
+    "--text-supporting-weight": "var(--font-weight-medium)",
     "--text-supporting-leading": "1.5385",
     "--text-display-1-size": "var(--font-size-5xl)",
     "--text-display-1-weight": "var(--font-weight-normal)",
@@ -81,7 +81,7 @@ export const matchaTheme = {
     "--duration-slow": "700ms",
     "--duration-slow-max": "935ms",
     "--font-family-body":
-      'var(--font-dm-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      'var(--font-montserrat), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     "--font-family-heading":
       'var(--font-playwrite-us-trad), Georgia, "Times New Roman", Times, serif',
     "--font-family-code":

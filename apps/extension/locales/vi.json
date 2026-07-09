@@ -22,6 +22,7 @@
   },
   "recentFontRow": {
     "loadRealFontName": "Tải tên font thật",
+    "loadInSidePanel": "Tải trong bảng bên",
     "loading": "Đang tải…",
     "tabNotFound": "Mở trang này trong một tab để tải font thật của nó.",
     "notFound": "Không tìm thấy file của font này (font hệ thống, hoặc stylesheet cross-origin bị chặn không đọc được).",

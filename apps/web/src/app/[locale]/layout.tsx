@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono, Playwrite_US_Trad } from "next/font/google";
+import {
+  JetBrains_Mono,
+  Montserrat,
+  Playwrite_US_Trad,
+} from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { DeferredAnalytics } from "@/components/analytics-deferred";
@@ -18,9 +22,10 @@ import "../globals.css";
 import "@/themes/matcha/matcha.css";
 import "@/themes/matcha/registry-bridge.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 const playwriteUsTrad = Playwrite_US_Trad({
@@ -86,7 +91,7 @@ export default async function RootLayout({
 
   return (
     <html
-      className={`${dmSans.variable} ${playwriteUsTrad.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${playwriteUsTrad.variable} ${jetbrainsMono.variable} h-full antialiased`}
       data-astryx-theme="matcha"
       lang={locale}
       suppressHydrationWarning

@@ -59,6 +59,28 @@ const VIEW_LABEL_KEY: Record<InspectorView, string> = {
   subsetting: "subsetting",
 };
 
+function InspectorNavItem({
+  isSelected,
+  label,
+  onSelect,
+}: {
+  isSelected: boolean;
+  label: string;
+  onSelect: () => void;
+}) {
+  return (
+    <ListItem
+      isSelected={isSelected}
+      label={
+        <Text as="span" type="label" weight="medium">
+          {label}
+        </Text>
+      }
+      onClick={onSelect}
+    />
+  );
+}
+
 export function FontInspectorSidebar({
   detected,
   fontMetadata,
@@ -139,11 +161,11 @@ export function FontInspectorSidebar({
           <Card className="bg-surface" padding={2}>
             <List className="gap-1" density="compact">
               {inspectorViews.map((option) => (
-                <ListItem
+                <InspectorNavItem
                   isSelected={option.value === view}
                   key={option.value}
                   label={option.label}
-                  onClick={() => onViewChange(option.value)}
+                  onSelect={() => onViewChange(option.value)}
                 />
               ))}
             </List>
@@ -170,11 +192,11 @@ export function FontInspectorSidebar({
         <Card className="bg-surface" padding={2}>
           <List className="gap-1" density="compact">
             {inspectorViews.map((option) => (
-              <ListItem
+              <InspectorNavItem
                 isSelected={option.value === view}
                 key={option.value}
                 label={option.label}
-                onClick={() => onViewChange(option.value)}
+                onSelect={() => onViewChange(option.value)}
               />
             ))}
           </List>

@@ -56,6 +56,10 @@ Turborepo monorepo: `apps/web` is the Next.js app; `packages/font-engine` (`@sor
 
 Keep `components/sora-ui/` thin (effects/sheets only). Sora UI tokens bridge to Matcha via `apps/web/src/themes/matcha/registry-bridge.css` when a Sora UI component is added.
 
+## Extension copy (i18n)
+
+Extension UI text lives in `packages/i18n-content/src/locales/{en,vi}/extension.json` — this is the source of truth. `apps/extension/locales/**` is generated output; never edit it directly. After changing `extension.json`, run `bun run i18n:sync-extension` to regenerate it (a lefthook pre-commit hook already does this automatically and stages the result when `extension.json` is part of the commit).
+
 ## Product context (for scope decisions)
 
 - Launch 1: Sora Type web inspector (font-first; not a Sora UI showcase).

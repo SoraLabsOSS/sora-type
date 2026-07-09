@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@astryxdesign/core/Button";
 import { VStack } from "@astryxdesign/core/Layout";
 import { Section } from "@astryxdesign/core/Section";
@@ -9,7 +11,7 @@ const NOT_FOUND_SECTION_CLASS = [
   "[&>div]:flex [&>div]:h-full [&>div]:min-h-0 [&>div]:flex-1 [&>div]:flex-col [&>div]:items-center [&>div]:justify-center",
 ].join(" ");
 
-export default function NotFound() {
+export default function LocaleNotFound() {
   const t = useTranslations("common.notFound");
 
   return (

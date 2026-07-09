@@ -11,6 +11,11 @@ pre-commit:
         - "**/*.css"
       stage_fixed: true
 
+    - run: bun run i18n:sync-extension
+      glob:
+        - "packages/i18n-content/src/locales/**/extension.json"
+      stage_fixed: true
+
 pre-push:
   jobs:
     - run: bun run build

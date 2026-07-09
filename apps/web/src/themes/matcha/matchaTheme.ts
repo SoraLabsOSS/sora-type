@@ -3,7 +3,7 @@
  *
  * An earthy green theme inspired by matcha tea and natural botanicals.
  * Core palette: #3E481D, #707E46, #C0CBA9, #F0F0E0, #FFFFFF
- * Uses Playwrite US Trad for headings and DM Sans for body text.
+ * Uses Playwrite US Trad for headings and Montserrat for body text.
  */
 
 import { defineSyntaxTheme, defineTheme } from "@astryxdesign/core/theme";
@@ -37,7 +37,7 @@ export const matchaTheme = defineTheme({
     // base 16 / ratio 1.25 — aligned with the other themes' geometric scale.
     scale: { base: 16, ratio: 1.25 },
     body: {
-      family: "var(--font-dm-sans)",
+      family: "var(--font-montserrat)",
       fallbacks:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },

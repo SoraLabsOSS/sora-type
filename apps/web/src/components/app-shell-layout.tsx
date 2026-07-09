@@ -43,10 +43,10 @@ function AppTopNav() {
       endContent={
         <>
           <AppInfoSheet />
+          <ThemeSwitcher />
           <div className="hidden lg:block">
             <LocaleSwitcher />
           </div>
-          <ThemeSwitcher />
         </>
       }
       heading={
