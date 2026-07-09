@@ -74,6 +74,31 @@ Web copy (`common`/`about`/`privacy`/`compare`/`inspector`) needs no regeneratio
 
 The extension itself has no in-app locale switcher; Chrome/Edge selects `en` or `vi` automatically based on the browser's own UI language setting, falling back to `en` (the extension's `default_locale`) if the browser is set to anything else.
 
+## Environment variables
+
+`apps/web` needs Upstash Redis credentials to rate-limit `POST /api/export-pdf` (see `apps/web/.env.example`):
+
+```bash
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
+
+Copy `apps/web/.env.example` to `apps/web/.env` and fill in values from your [Upstash](https://upstash.com) Redis database's REST API tab. Without these, rate-limit checks will fail (the endpoint fails closed).
+
+## Releasing the extension
+
+`apps/extension` publishes to Microsoft Edge Add-ons via `.github/workflows/publish-extension.yml`, triggered by pushing a tag — pushing to `main` does **not** publish.
+
+1. Bump `version` in `apps/extension/package.json`.
+2. Tag the release commit and push the tag:
+   ```bash
+   git tag extension-vX.Y.Z
+   git push origin extension-vX.Y.Z
+   ```
+3. The workflow builds and zips the extension with `bun run zip` (`apps/extension/.output/*-chrome.zip`) and publishes it via the [`wdzeng/edge-addon`](https://github.com/wdzeng/edge-addon) action.
+
+This only *updates* an existing Edge Add-ons listing — the first submission must be done once, manually, through [Partner Center](https://partner.microsoft.com/dashboard/microsoftedge/overview) to obtain a Product ID. The workflow needs three repo secrets: `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY`.
+
 ## Credits
 
 - **OpenType feature defaults and native CSS mappings** (`packages/font-engine/src/opentype-feature-classification.ts`, `packages/font-engine/src/opentype-feature-variants.ts`) — the fixed/on/off feature-state table and the `font-variant-*` equivalents table are ported from [Wakamai Fondue](https://github.com/Wakamai-Fondue/wakamai-fondue-engine)'s `layout-features.js` (Google LLC, Apache License 2.0), trimmed to tag-only lookups.
