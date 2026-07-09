@@ -6,6 +6,13 @@
   "heading": "Font của bạn không bao giờ rời khỏi trình duyệt",
   "body1": "Sora Type phân tích, xem trước và kiểm tra mọi font hoàn toàn trên thiết bị của bạn. File font được đọc bằng fontkit và tạo hình chữ bằng harfbuzzjs, cả hai đều chạy phía client bằng WebAssembly — không có gì được gửi lên server để kiểm tra, so sánh hay xem trước.",
   "body2": "Điều này quan trọng nếu bạn làm việc với font thương mại hoặc font có NDA: bạn có thể thả vào và kiểm tra metadata, độ phủ glyph, hỗ trợ ngôn ngữ mà không có file nào chạm vào hạ tầng của chúng tôi.",
+  "extension": {
+    "heading": "Tiện ích trình duyệt",
+    "body1": "Tiện ích Sora Type nhận diện font trên các trang web bạn đang xem. Mọi thứ chạy trong trình duyệt và không gửi dữ liệu kiểm tra font lên server của chúng tôi.",
+    "body2": "Khi bạn bật công cụ chọn font và bấm vào chữ trên trang, tiện ích có thể thu URL và tiêu đề trang (lịch sử web), thông tin font và kiểu chữ trên trang (nội dung website), cùng thao tác chuột cần để vận hành công cụ chọn (hoạt động người dùng). Bảng bên cũng có thể liệt kê font trên tab hiện tại và, khi bạn yêu cầu, tải file font mà trang đó tham chiếu để phân tích metadata ngay trên máy.",
+    "body3": "Dữ liệu này chỉ được lưu trong bộ nhớ local của tiện ích trên thiết bị bạn. Chúng tôi không bán, không chia sẻ cho bên thứ ba cho mục đích riêng của họ, và không dùng cho quảng cáo, tín dụng hay bất kỳ mục đích nào ngoài việc kiểm tra font.",
+    "body4": "Nếu bạn chọn \"Mở trong Sora Type\", tiện ích mở web app trong tab mới và có thể truyền URL file font qua tham số truy vấn — chỉ khi bạn bấm liên kết đó."
+  },
   "pdfException": {
     "heading": "Ngoại lệ duy nhất: xuất PDF",
     "body": "Tạo báo cáo PDF cần một PDF engine Node.js, không thể chạy trong trình duyệt. Khi bạn dùng \"Export PDF report\", file font của bạn được gửi một lần lên server để render báo cáo, sau đó bị xóa ngay sau khi trả kết quả — không bao giờ được ghi log, lưu trữ hay tái sử dụng."

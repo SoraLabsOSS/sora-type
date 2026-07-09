@@ -35,6 +35,24 @@ export default async function PrivacyPage() {
 
           <VStack gap={1}>
             <Heading className="font-sans" level={3}>
+              {t("extension.heading")}
+            </Heading>
+            <Text color="secondary" type="body">
+              {t("extension.body1")}
+            </Text>
+            <Text color="secondary" type="body">
+              {t("extension.body2")}
+            </Text>
+            <Text color="secondary" type="body">
+              {t("extension.body3")}
+            </Text>
+            <Text color="secondary" type="body">
+              {t("extension.body4")}
+            </Text>
+          </VStack>
+
+          <VStack gap={1}>
+            <Heading className="font-sans" level={3}>
               {t("pdfException.heading")}
             </Heading>
             <Text color="secondary" type="body">

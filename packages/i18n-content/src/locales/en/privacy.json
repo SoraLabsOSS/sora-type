@@ -6,6 +6,13 @@
   "heading": "Your fonts never leave your browser",
   "body1": "Sora Type parses, previews, and inspects every font entirely on your device. Font files are read with fontkit and shaped with harfbuzzjs, both running client-side in WebAssembly — nothing is sent to a server for inspection, comparison, or preview.",
   "body2": "This matters if you work with commercial or NDA-protected typefaces: you can drop them in and inspect metadata, glyph coverage, and language support without any file ever touching our infrastructure.",
+  "extension": {
+    "heading": "Browser extension",
+    "body1": "The Sora Type browser extension identifies fonts on web pages you visit. It runs entirely in your browser and does not send inspection data to our servers.",
+    "body2": "When you turn on the font picker and inspect text, the extension may collect page URL and title (web history), font and style information from the page (website content), and mouse clicks and movement needed to operate the picker (user activity). The side panel can also list fonts on the active tab and, when you ask it to, download a font file referenced by that page so metadata can be parsed locally.",
+    "body3": "This data is stored only in extension local storage on your device. We do not sell it, share it with third parties for their own purposes, or use it for advertising, credit decisions, or anything unrelated to font inspection.",
+    "body4": "If you choose \"Open in Sora Type\", the extension opens our web app in a new tab and may pass a font file URL as a query parameter — only when you click that link."
+  },
   "pdfException": {
     "heading": "The one exception: PDF export",
     "body": "Generating a PDF report requires a Node.js PDF engine, which can't run in the browser. When you use \"Export PDF report\", your font file is sent once to our server to render the report, then discarded immediately after the response is returned — it is never logged, stored, or reused."
