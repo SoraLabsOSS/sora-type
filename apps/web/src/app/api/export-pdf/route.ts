@@ -1,6 +1,7 @@
 import { buildFontReport, exportReportAsPdf } from "@sora-type/font-engine";
 import { create as createFont } from "fontkit";
 import { NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 // pdfkit generates via Node streams/buffers and has no zero-config browser
 // build (unlike fontkit/harfbuzzjs) — this is the one piece of the engine
@@ -10,7 +11,37 @@ export const runtime = "nodejs";
 const MAX_FONT_SIZE = 10 * 1024 * 1024;
 const FILE_EXTENSION = /\.[^./]+$/;
 
+const RATE_LIMIT = 15;
+const RATE_LIMIT_WINDOW = "60 s";
+
+function getClientIp(request: Request): string {
+  return (
+    request.headers.get("x-vercel-forwarded-for") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    // No IP header (shouldn't happen behind Vercel's edge in production):
+    // give each such request its own bucket instead of lumping unrelated
+    // clients into a single shared "unknown" identifier.
+    `unknown:${crypto.randomUUID()}`
+  );
+}
+
+function tooManyRequests(reset: number): NextResponse {
+  const retryAfterSeconds = Math.max(0, Math.ceil((reset - Date.now()) / 1000));
+  return NextResponse.json(
+    { error: "Too many requests" },
+    { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+  );
+}
+
 export async function POST(request: Request): Promise<Response> {
+  const rateLimit = await checkRateLimit(`export-pdf:${getClientIp(request)}`, {
+    limit: RATE_LIMIT,
+    window: RATE_LIMIT_WINDOW,
+  });
+  if (!rateLimit.success) {
+    return tooManyRequests(rateLimit.reset);
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();
