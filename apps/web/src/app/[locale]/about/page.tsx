@@ -30,6 +30,9 @@ export default async function AboutPage() {
           <Heading className="font-sans" level={1}>
             {t("hero.heading")}
           </Heading>
+          <Text color="secondary" type="supporting">
+            {t("hero.tagline")}
+          </Text>
         </VStack>
 
         <Text as="p" type="body">

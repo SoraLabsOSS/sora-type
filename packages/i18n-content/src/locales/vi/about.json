@@ -4,7 +4,8 @@
   },
   "hero": {
     "eyebrow": "🔍 ĐÂY LÀ GÌ",
-    "heading": "Công cụ kiểm tra font chạy hoàn toàn trong trình duyệt"
+    "heading": "Công cụ kiểm tra font chạy hoàn toàn trong trình duyệt",
+    "tagline": "Built on Vercel · fonts never leave your browser"
   },
   "intro": "Sora Type đọc file OpenType, TrueType, WOFF và WOFF2 bằng fontkit và tạo hình chữ bằng harfbuzzjs — cả hai đều chạy ở phía client bằng WebAssembly. Thả một font vào để xem metadata, độ phủ glyph, hỗ trợ ngôn ngữ và các tính năng layout OpenType, hoặc tải hai font cạnh nhau để so sánh trực tiếp.",
   "inspector": {

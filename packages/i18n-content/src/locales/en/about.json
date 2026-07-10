@@ -4,7 +4,8 @@
   },
   "hero": {
     "eyebrow": "🔍 WHAT IS THIS",
-    "heading": "A font inspector that runs entirely in your browser"
+    "heading": "A font inspector that runs entirely in your browser",
+    "tagline": "Built on Vercel · fonts never leave your browser"
   },
   "intro": "Sora Type reads OpenType, TrueType, WOFF, and WOFF2 files with fontkit and shapes text with harfbuzzjs — both running client-side in WebAssembly. Drop in a font and see its metadata, glyph coverage, language support, and OpenType layout features, or load two fonts side by side to compare them directly.",
   "inspector": {
