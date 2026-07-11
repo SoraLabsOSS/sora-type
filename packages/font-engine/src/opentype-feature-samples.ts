@@ -81,6 +81,49 @@ const MAX_SAMPLES_PER_FEATURE = 20;
 // reference engine guards against with its own capacity/display caps.
 const MAX_CONTEXTUAL_COMBINATIONS = 5;
 
+// Latin letter blocks (basic + accented). `DEFAULT_DEMO_TEXT` in the compare
+// UI is a Latin pangram, so when a feature's coverage spans multiple scripts
+// (e.g. `smcp` on a font with both Cyrillic and Latin small caps), prefer
+// collecting the Latin-script glyphs first — otherwise fonts whose glyph
+// order lists another script before Latin end up capped at
+// `MAX_SAMPLES_PER_FEATURE` before a single Latin sample is ever reached,
+// and the demo shows a script the rest of the UI never uses.
+const LATIN_CODE_POINT_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x00_41, 0x00_5a], // A-Z
+  [0x00_61, 0x00_7a], // a-z
+  [0x00_c0, 0x00_ff], // Latin-1 Supplement letters
+  [0x01_00, 0x02_4f], // Latin Extended-A/B
+];
+
+function isLatinSample(sample: string): boolean {
+  const codePoint = sample.codePointAt(0) ?? 0;
+  return LATIN_CODE_POINT_RANGES.some(
+    ([start, end]) => codePoint >= start && codePoint <= end
+  );
+}
+
+/** Positions of Latin-mapped glyphs first, then the rest, each in their
+ * original relative order — so capping at `MAX_SAMPLES_PER_FEATURE` favors
+ * Latin samples without dropping other scripts when a font has no Latin
+ * coverage for a feature. Returns *indices into `glyphs`* rather than the
+ * glyph IDs themselves, so callers that need to correlate a position back to
+ * other per-index data (e.g. `ligatureSets`) don't have to round-trip
+ * through a glyph-ID-keyed map — coverage glyph IDs are supposed to be
+ * unique per the OpenType spec, but a malformed/hand-edited upload could
+ * violate that, and keying by ID would silently drop or misalign entries. */
+function prioritizeLatinIndices(
+  glyphs: number[],
+  charFor: Map<number, string>
+): number[] {
+  const latin: number[] = [];
+  const rest: number[] = [];
+  glyphs.forEach((glyph, index) => {
+    const char = charFor.get(glyph);
+    (char && isLatinSample(char) ? latin : rest).push(index);
+  });
+  return [...latin, ...rest];
+}
+
 function coverageGlyphs(coverage: GsubCoverage): number[] {
   if (coverage.glyphs) {
     return coverage.glyphs;
@@ -120,7 +163,10 @@ function collectLigatureSamples(
   charFor: Map<number, string>,
   samples: Set<string>
 ): void {
-  for (let index = 0; index < glyphs.length; index++) {
+  // `ligatureSets` is indexed by position in the original (unsorted)
+  // coverage list, so reorder positions rather than glyph IDs — see
+  // `prioritizeLatinIndices` for why.
+  for (const index of prioritizeLatinIndices(glyphs, charFor)) {
     const firstChar = charFor.get(glyphs[index]);
     if (!firstChar) {
       continue;
@@ -142,8 +188,8 @@ function collectSimpleSamples(
   charFor: Map<number, string>,
   samples: Set<string>
 ): void {
-  for (const glyph of glyphs) {
-    const char = charFor.get(glyph);
+  for (const index of prioritizeLatinIndices(glyphs, charFor)) {
+    const char = charFor.get(glyphs[index]);
     if (char) {
       samples.add(char);
     }
@@ -418,7 +464,12 @@ function findGsubSamples(
       }
     }
   }
-  return samples.size > 0 ? [...samples].join(" ") : null;
+  if (samples.size === 0) {
+    return null;
+  }
+  const all = [...samples];
+  const latin = all.filter(isLatinSample);
+  return (latin.length > 0 ? latin : all).join(" ");
 }
 
 /**

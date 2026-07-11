@@ -421,7 +421,7 @@ export default function CompareView() {
       try {
         const font = openFont(buffer);
         const cssFontFamily = toCssFontFamily(slot, fileName);
-        await loadFontFace(cssFontFamily, cssFontFamily, buffer);
+        await loadFontFace(slot, cssFontFamily, buffer);
         if (loadTokens.current[slot] !== token) {
           return;
         }
@@ -601,6 +601,17 @@ export default function CompareView() {
       ),
     }));
   }, [rightMetadata]);
+
+  // Evicts both slots' registered FontFace instances when the compare page
+  // unmounts — otherwise they stay registered in `document.fonts` for the
+  // rest of the session (mirrors the inspector page's own cleanup).
+  useEffect(
+    () => () => {
+      clearFontFace("left");
+      clearFontFace("right");
+    },
+    []
+  );
 
   const leftFontSlot = useMemo(
     () =>

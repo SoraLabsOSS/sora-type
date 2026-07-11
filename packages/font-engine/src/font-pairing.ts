@@ -26,12 +26,29 @@ function bucketDelta(
   return delta < moderateBelow ? "moderate" : "distinct";
 }
 
-function xHeightRatio(metadata: FontMetadata): number {
-  return metadata.metrics.xHeight / metadata.metrics.unitsPerEm;
+// `xHeight`/`capHeight` come straight from the OS/2 table's `sxHeight`/
+// `sCapHeight` fields (see font-metadata.ts), which many real-world fonts
+// simply never set — fontkit reports `0` rather than throwing. Treating that
+// as a real height of 0 would make the ratio (and the resulting delta
+// between two such fonts) come out as 0, which the "matched" bucket then
+// misreports as "these two read at a similar height" when the truth is the
+// font just didn't declare a value. `unitsPerEm <= 0` is the same kind of
+// guard for a corrupt/malformed upload, which would otherwise produce a
+// NaN/Infinity ratio.
+function xHeightRatio(metadata: FontMetadata): number | null {
+  const { xHeight, unitsPerEm } = metadata.metrics;
+  if (unitsPerEm <= 0 || xHeight <= 0) {
+    return null;
+  }
+  return xHeight / unitsPerEm;
 }
 
-function capHeightRatio(metadata: FontMetadata): number {
-  return metadata.metrics.capHeight / metadata.metrics.unitsPerEm;
+function capHeightRatio(metadata: FontMetadata): number | null {
+  const { capHeight, unitsPerEm } = metadata.metrics;
+  if (unitsPerEm <= 0 || capHeight <= 0) {
+    return null;
+  }
+  return capHeight / unitsPerEm;
 }
 
 function formatRatio(value: number): string {
@@ -41,9 +58,12 @@ function formatRatio(value: number): string {
 function buildXHeightInsight(
   left: FontMetadata,
   right: FontMetadata
-): PairingInsight {
+): PairingInsight | null {
   const leftRatio = xHeightRatio(left);
   const rightRatio = xHeightRatio(right);
+  if (leftRatio === null || rightRatio === null) {
+    return null;
+  }
   const magnitude = bucketDelta(Math.abs(leftRatio - rightRatio), 0.015, 0.04);
   const notes: Record<PairingMagnitude, string> = {
     matched: "Lowercase letters read at a similar height between the two.",
@@ -65,9 +85,12 @@ function buildXHeightInsight(
 function buildCapHeightInsight(
   left: FontMetadata,
   right: FontMetadata
-): PairingInsight {
+): PairingInsight | null {
   const leftRatio = capHeightRatio(left);
   const rightRatio = capHeightRatio(right);
+  if (leftRatio === null || rightRatio === null) {
+    return null;
+  }
   const magnitude = bucketDelta(Math.abs(leftRatio - rightRatio), 0.02, 0.05);
   const notes: Record<PairingMagnitude, string> = {
     matched: "Capital letters reach a similar height between the two.",
