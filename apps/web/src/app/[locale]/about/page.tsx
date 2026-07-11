@@ -5,7 +5,7 @@ import { HStack, VStack } from "@astryxdesign/core/Layout";
 import { Section } from "@astryxdesign/core/Section";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { getTranslations } from "next-intl/server";
-import { GITHUB_REPO_URL, PORTFOLIO_URL } from "@/lib/site";
+import { GITHUB_REPO_URL, PORTFOLIO_URL, PRODUCT_HUNT_URL } from "@/lib/site";
 
 export async function generateMetadata() {
   const t = await getTranslations("about.meta");
@@ -78,6 +78,16 @@ export default async function AboutPage() {
         </Card>
 
         <Divider variant="subtle" />
+
+        <a href={PRODUCT_HUNT_URL} rel="noopener noreferrer" target="_blank">
+          {/* biome-ignore lint/performance/noImgElement: official Product Hunt embed badge markup, not a candidate for next/image optimization */}
+          <img
+            alt={t("footer.productHuntAlt")}
+            height={54}
+            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1192902&theme=light"
+            width={250}
+          />
+        </a>
 
         <HStack align="center" gap={3} justify="between" wrap="wrap">
           <Text color="secondary" type="supporting">

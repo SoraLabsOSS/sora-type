@@ -8,6 +8,8 @@ export const SITE_URL = "https://type.soralabs.io.vn" as const;
 
 export const GITHUB_REPO_URL = "https://github.com/SoraLabsOSS/sora-type";
 export const PORTFOLIO_URL = "https://nguyentruonggiang.id.vn";
+export const PRODUCT_HUNT_URL =
+  "https://www.producthunt.com/products/sora-type";
 
 /**
  * Origin for resolving metadata and OG image URLs.
