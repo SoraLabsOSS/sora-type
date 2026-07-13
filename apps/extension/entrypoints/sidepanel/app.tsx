@@ -3,7 +3,7 @@ import { i18n } from "#i18n";
 import { PageFontsSection } from "@/components/page-fonts-section";
 import { RecentFontsSection } from "@/components/recent-fonts-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sidePanelInitialTab } from "@/utils/storage";
+import { sidePanelInitialTab } from "@/utils/session-storage";
 
 function App() {
   const [activeTab, setActiveTab] = useState<"page" | "recent">("page");

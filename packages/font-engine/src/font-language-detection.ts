@@ -42,6 +42,23 @@ function decomposedCodePoints(char: string): number[] {
 }
 
 /**
+ * A shape() call throwing on one specific character sequence (rather than at
+ * Face/Font construction) must not abort the whole orthography check — treat
+ * it as a positioning failure (conservative: the "safely supports" contract
+ * in `detectLanguages` should not claim support HarfBuzz couldn't verify).
+ */
+function safeCheckMarkAttachment(
+  hbFont: NonNullable<ReturnType<typeof createShapingFont>>,
+  char: string
+): boolean {
+  try {
+    return checkMarkAttachment(hbFont, char);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Checks a single orthography against a font in three tiers:
  *  1. Direct coverage — every character's codepoint(s) exist in the font.
  *  2. Decomposed fallback — a missing precomposed character can still be
@@ -83,7 +100,7 @@ function checkOrthography(
     // precomposed char we're only getting via decomposition — either way,
     // confirm the marks actually attach. The glyphs exist either way, so a
     // failure here is a positioning problem, not a coverage problem.
-    if (hbFont && !checkMarkAttachment(hbFont, char)) {
+    if (hbFont && !safeCheckMarkAttachment(hbFont, char)) {
       unpositioned.push(char);
     }
   }
@@ -146,7 +163,7 @@ export function detectLanguages(
   fontData?: ArrayBuffer
 ): LanguageSupportResult[] {
   const characterSet = new Set(font.characterSet);
-  const hbFont = fontData ? createShapingFont(fontData) : null;
+  const hbFont = fontData ? safeCreateShapingFont(fontData) : null;
   return checkAllOrthographies(characterSet, hbFont).filter(
     (r) => r.support === "full" || r.support === "decomposed"
   );
@@ -161,6 +178,23 @@ export function reportAllLanguages(
   fontData?: ArrayBuffer
 ): LanguageSupportResult[] {
   const characterSet = new Set(font.characterSet);
-  const hbFont = fontData ? createShapingFont(fontData) : null;
+  const hbFont = fontData ? safeCreateShapingFont(fontData) : null;
   return checkAllOrthographies(characterSet, hbFont);
+}
+
+/**
+ * HarfBuzz's Face/Font construction can throw on fonts fontkit otherwise
+ * tolerates (e.g. tables fontkit reads leniently but HarfBuzz validates
+ * strictly). A throw here must not take down the whole language report —
+ * callers already treat a `null` hbFont as "skip tier 3, cmap-only coverage"
+ * when `fontData` is omitted, so failed construction degrades the same way.
+ */
+function safeCreateShapingFont(
+  fontData: ArrayBuffer
+): ReturnType<typeof createShapingFont> | null {
+  try {
+    return createShapingFont(fontData);
+  } catch {
+    return null;
+  }
 }

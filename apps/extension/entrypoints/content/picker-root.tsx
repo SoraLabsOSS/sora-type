@@ -67,6 +67,16 @@ export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
       return result;
     }
 
+    // A webfont can still be downloading (font-display: swap) when the user
+    // starts hovering/clicking right after the page looks loaded — caching
+    // by element would otherwise pin that pre-swap fallback-font result
+    // forever. Any font finishing a load invalidates the whole cache so the
+    // next hover/click re-detects against the now-current render.
+    function handleFontsLoadingDone() {
+      cacheRef.current = new WeakMap();
+    }
+    document.fonts?.addEventListener("loadingdone", handleFontsLoadingDone);
+
     function handleMouseMove(event: MouseEvent) {
       const target = event.target;
       if (!(target instanceof Element) || target === shadowHost) {
@@ -137,6 +147,10 @@ export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
       document.removeEventListener("mousemove", handleMouseMove, true);
       document.removeEventListener("click", handleClick, true);
       document.removeEventListener("keydown", handleKeyDown, true);
+      document.fonts?.removeEventListener(
+        "loadingdone",
+        handleFontsLoadingDone
+      );
     };
   }, [shadowHost]);
 

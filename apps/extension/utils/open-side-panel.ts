@@ -1,6 +1,15 @@
-import { sidePanelInitialTab } from "@/utils/storage";
+import { sidePanelInitialTab } from "@/utils/session-storage";
 
 const SORA_TYPE_URL = "https://type.soralabs.io.vn";
+
+/** Side panel is Chrome/Edge-only for now (see `wxt.config.ts` — Firefox
+ * needs its own `sidebar_action` entrypoint). `browser.sidePanel` is
+ * undefined on unsupported browsers, so callers must check this before
+ * offering side-panel actions in the UI — `openSidePanel` itself silently
+ * no-ops via `?.` rather than throwing. */
+export function isSidePanelSupported(): boolean {
+  return typeof browser.sidePanel?.open === "function";
+}
 
 export async function openSidePanel() {
   const win = await browser.windows.getCurrent();

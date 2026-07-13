@@ -73,13 +73,24 @@ export function setupFrameRegistry(): void {
   // `getKnownFrames` racing with navigation-start would otherwise rehydrate
   // from the stale persisted list, silently resurrecting the exact bug this
   // reset fixes via the storage layer instead.
+  //
+  // Both the in-memory delete and the storage removal must run *inside* the
+  // same per-tab queued task, not synchronously before it — a `registerFrame`
+  // task already mid-flight (past its cache check, awaiting `storage.getItem`
+  // in `getOrHydrateFrames`) would otherwise resume and `framesByTab.set(...)`
+  // the stale pre-navigation frames *after* a synchronous delete, silently
+  // undoing it. Queuing the delete forces it to run strictly after any
+  // already-running registration for this tab finishes, so it always has the
+  // last word.
   browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.status !== "loading") {
       return;
     }
-    framesByTab.delete(tabId);
     frameQueue
-      .run(tabId, () => storage.removeItem(framesStorageKey(tabId)))
+      .run(tabId, async () => {
+        framesByTab.delete(tabId);
+        await storage.removeItem(framesStorageKey(tabId));
+      })
       .catch(() => {
         // Best-effort — nothing meaningful to recover from here.
       });
