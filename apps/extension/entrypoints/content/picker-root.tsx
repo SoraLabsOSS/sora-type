@@ -3,7 +3,8 @@ import {
   detectRenderedFont,
   type FontDetectionResult,
 } from "@/utils/font-detect";
-import { MAX_RECENT_FONTS, pickerEnabled, recentFonts } from "@/utils/storage";
+import { sendMessage } from "@/utils/messaging";
+import { pickerEnabled } from "@/utils/storage";
 import { Panel } from "./panel";
 import { Tooltip } from "./tooltip";
 
@@ -21,17 +22,21 @@ interface Hover {
 }
 
 async function saveToRecent(family: string) {
-  const current = await recentFonts.getValue();
-  const next = [
-    {
-      family,
-      pageTitle: document.title,
-      pageUrl: location.href,
-      detectedAt: Date.now(),
-    },
-    ...current,
-  ].slice(0, MAX_RECENT_FONTS);
-  await recentFonts.setValue(next);
+  await sendMessage("saveRecentFont", { family });
+}
+
+function generatePinId(): string {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // crypto.randomUUID() requires a secure context; this content script also
+  // runs on http:// pages/iframes (matches: "*://*/*"), where it's
+  // undefined. crypto.getRandomValues() works everywhere, so fall back to
+  // it there — this id is only ever used as a React list key, no format
+  // requirement.
+  return Array.from(crypto.getRandomValues(new Uint32Array(4)), (n) =>
+    n.toString(36)
+  ).join("-");
 }
 
 export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
@@ -86,9 +91,12 @@ export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
       const result = detect(target);
       setPins((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), result, x: event.clientX, y: event.clientY },
+        { id: generatePinId(), result, x: event.clientX, y: event.clientY },
       ]);
-      saveToRecent(result.family);
+      saveToRecent(result.family).catch(() => {
+        // Best-effort — background may not be awake yet, or the extension
+        // context was invalidated (reload/update). Not worth surfacing.
+      });
     }
 
     function handleKeyDown(event: KeyboardEvent) {

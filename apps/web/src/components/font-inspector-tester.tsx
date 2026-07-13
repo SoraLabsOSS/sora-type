@@ -33,6 +33,22 @@ const DEFAULT_TESTER_TEXT =
 const DEFAULT_FONT_SIZE = 32;
 const TESTER_PALETTE_CLASS = "sora-tester-palette-preview";
 
+/** The font's own name-table family name is attacker-controlled (a crafted
+ * upload); escape it before it goes into a CSS string literal so it can't
+ * break out and inject arbitrary rules into the page. An unescaped raw
+ * newline (CR/LF/FF) inside a quoted CSS string token terminates the string
+ * early per the CSS Syntax spec — escaping just `\` and `"` isn't enough —
+ * so strip control characters first. */
+function escapeCssString(value: string): string {
+  const withoutControlChars = Array.from(value)
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 0;
+      return !(code <= 0x1f || code === 0x7f);
+    })
+    .join("");
+  return withoutControlChars.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 type TextAlign = "center" | "justify" | "left" | "right";
 
 interface FontInspectorTesterProps {
@@ -280,7 +296,7 @@ export function FontInspectorTester({
           </VStack>
 
           {palette && (
-            <style>{`@font-palette-values --${TESTER_PALETTE_CLASS} {\n  font-family: "${metadata.familyName}";\n  base-palette: ${palette.index};\n}\n.${TESTER_PALETTE_CLASS} {\n  font-palette: --${TESTER_PALETTE_CLASS};\n}`}</style>
+            <style>{`@font-palette-values --${TESTER_PALETTE_CLASS} {\n  font-family: "${escapeCssString(metadata.familyName)}";\n  base-palette: ${palette.index};\n}\n.${TESTER_PALETTE_CLASS} {\n  font-palette: --${TESTER_PALETTE_CLASS};\n}`}</style>
           )}
           <textarea
             className={`w-full resize-y rounded-md border border-border bg-body px-4 py-3 text-primary outline-none transition-colors focus-visible:border-accent ${palette ? TESTER_PALETTE_CLASS : ""}`}

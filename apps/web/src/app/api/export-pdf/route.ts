@@ -25,6 +25,13 @@ function getClientIp(request: Request): string {
   );
 }
 
+// Strips characters that would break out of the quoted `filename` parameter
+// or aren't valid Latin1 header bytes (Content-Disposition isn't UTF-8-safe;
+// a raw Unicode filename would throw when the Headers are constructed).
+function sanitizeDownloadName(name: string): string {
+  return name.replace(/["\\]/g, "").replace(/[^\x20-\x7e]/g, "_");
+}
+
 function tooManyRequests(reset: number): NextResponse {
   const retryAfterSeconds = Math.max(0, Math.ceil((reset - Date.now()) / 1000));
   return NextResponse.json(
@@ -84,13 +91,44 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const report = buildFontReport(font, arrayBuffer, file.name, mode, file.size);
-  const pdfBytes = await exportReportAsPdf(report);
-  const pdfArrayBuffer = pdfBytes.buffer.slice(
-    pdfBytes.byteOffset,
-    pdfBytes.byteOffset + pdfBytes.byteLength
-  ) as ArrayBuffer;
-  const downloadName = `${file.name.replace(FILE_EXTENSION, "")}-report.pdf`;
+  if (!font) {
+    // createFont doesn't throw for a structurally-valid-but-empty TrueType
+    // Collection (numFonts: 0) — it "succeeds" with an empty `fonts` array,
+    // so `font` ends up undefined here without ever hitting the catch above.
+    return NextResponse.json(
+      { error: "Could not parse font: no font data found" },
+      { status: 400 }
+    );
+  }
+
+  let pdfArrayBuffer: ArrayBuffer;
+  try {
+    const report = buildFontReport(
+      font,
+      arrayBuffer,
+      file.name,
+      mode,
+      file.size
+    );
+    const pdfBytes = await exportReportAsPdf(report);
+    pdfArrayBuffer = pdfBytes.buffer.slice(
+      pdfBytes.byteOffset,
+      pdfBytes.byteOffset + pdfBytes.byteLength
+    ) as ArrayBuffer;
+  } catch (err) {
+    // A font that "opened" (non-empty, non-null `font`) can still have a
+    // malformed internal table (cmap, glyf, COLR/CPAL, ...) that only
+    // throws once something actually reads it — same failure class as the
+    // empty-collection check above, just triggered later.
+    return NextResponse.json(
+      { error: `Could not generate report: ${(err as Error).message}` },
+      { status: 400 }
+    );
+  }
+
+  const downloadName = sanitizeDownloadName(
+    `${file.name.replace(FILE_EXTENSION, "")}-report.pdf`
+  );
 
   return new Response(pdfArrayBuffer, {
     status: 200,

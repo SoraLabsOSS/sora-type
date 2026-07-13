@@ -16,7 +16,8 @@ import { Token } from "@astryxdesign/core/Token";
 import { buildComparisonMatrix } from "@sora-type/font-engine/font-compare";
 import {
   clearFontFace,
-  loadFontFace,
+  decodeFontFace,
+  registerFontFace,
   toCssFontFamily,
 } from "@sora-type/font-engine/font-face";
 import {
@@ -26,7 +27,7 @@ import {
 import { buildVariationSettings } from "@sora-type/font-engine/font-variable-instances";
 import { create as createFont, type Font as FontkitFont } from "fontkit";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompareCharacters } from "@/components/compare-characters";
 import { CompareCss } from "@/components/compare-css";
 import { CompareData } from "@/components/compare-data";
@@ -35,6 +36,7 @@ import { CompareOverlay } from "@/components/compare-overlay";
 import { ComparePairing } from "@/components/compare-pairing";
 import { CompareWaterfall } from "@/components/compare-waterfall";
 import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
+import { useLatestAsync } from "@/hooks/use-latest-async";
 
 type Slot = "left" | "right";
 type TabValue =
@@ -62,7 +64,6 @@ export interface FontSlotState {
   error: string | null;
   file: File | null;
   font: FontkitFont | null;
-  isLoading: boolean;
   meta: SlotMeta | null;
 }
 
@@ -79,7 +80,6 @@ const EMPTY_SLOT: FontSlotState = {
   buffer: null,
   cssFontFamily: null,
   meta: null,
-  isLoading: false,
   error: null,
 };
 
@@ -134,6 +134,7 @@ function isSlotReady(state: FontSlotState): boolean {
 }
 
 function CompareFontInput({
+  isLoading,
   localFontPickerKey,
   onChange,
   onLocalFontClear,
@@ -141,6 +142,7 @@ function CompareFontInput({
   slot,
   state,
 }: {
+  isLoading: boolean;
   localFontPickerKey: number;
   onChange: (slot: Slot, file: File | File[] | null) => void;
   onLocalFontClear: (slot: Slot) => void;
@@ -159,7 +161,7 @@ function CompareFontInput({
       <FileInput
         accept=".ttf,.otf,.woff,.woff2"
         description={t("fontInput.description")}
-        isLoading={state.isLoading}
+        isLoading={isLoading}
         label={slot === "left" ? t("fontInput.first") : t("fontInput.second")}
         mode="dropzone"
         onChange={(file) => onChange(slot, file)}
@@ -174,7 +176,7 @@ function CompareFontInput({
         value={state.file}
       />
       <InspectorLocalFontPicker
-        isDisabled={state.isLoading}
+        isDisabled={isLoading}
         key={localFontPickerKey}
         onClear={() => onLocalFontClear(slot)}
         onSelect={(fileName, buffer) =>
@@ -407,24 +409,35 @@ export default function CompareView() {
   // Guards against out-of-order async resolution: dropping a second file
   // into the same slot before the first has finished parsing could
   // otherwise let the stale first result overwrite the newer one.
-  const loadTokens = useRef<Record<Slot, number>>({ left: 0, right: 0 });
+  const { isLoading, run, runSync } = useLatestAsync<Slot>();
 
+  // Only the entry points below own a guard; this helper takes the caller's
+  // `isCurrent` rather than starting its own, so it can't double-bump and
+  // immediately self-invalidate when called from inside `run`.
   const loadFontIntoSlot = useCallback(
     async (
       slot: Slot,
+      isCurrent: () => boolean,
       fileName: string,
       buffer: ArrayBuffer,
       file: File | null
     ) => {
-      const token = ++loadTokens.current[slot];
-      updateSlot(slot, { isLoading: true, error: null });
+      updateSlot(slot, { error: null });
       try {
         const font = openFont(buffer);
         const cssFontFamily = toCssFontFamily(slot, fileName);
-        await loadFontFace(slot, cssFontFamily, buffer);
-        if (loadTokens.current[slot] !== token) {
+        const fontFace = await decodeFontFace(cssFontFamily, buffer);
+        if (!isCurrent()) {
+          // Superseded while decoding — nothing was registered, so there's
+          // nothing to clean up.
           return;
         }
+        registerFontFace(slot, fontFace);
+        // Names come from extractFontMetadata (not straight off `font`) so
+        // they share its missing/garbled-name-table fallback — some
+        // web-optimized fonts ship a blank or single-placeholder-character
+        // name here while every other field stays intact.
+        const metadata = extractFontMetadata(font, fileName);
         updateSlot(slot, {
           file,
           font,
@@ -432,15 +445,14 @@ export default function CompareView() {
           cssFontFamily,
           meta: {
             fileName,
-            fullName: font.fullName,
-            familyName: font.familyName,
-            style: font.subfamilyName,
+            fullName: metadata.fullName,
+            familyName: metadata.familyName,
+            style: metadata.style,
             numGlyphs: font.numGlyphs,
           },
-          isLoading: false,
         });
       } catch (err) {
-        if (loadTokens.current[slot] !== token) {
+        if (!isCurrent()) {
           return;
         }
         updateSlot(slot, {
@@ -458,32 +470,47 @@ export default function CompareView() {
       bumpLocalFontPickerKey(slot);
 
       if (!next) {
-        loadTokens.current[slot]++;
-        clearFontFace(slot);
-        updateSlot(slot, { ...EMPTY_SLOT });
+        runSync(() => {
+          clearFontFace(slot);
+          updateSlot(slot, { ...EMPTY_SLOT });
+        }, slot);
         return;
       }
 
-      const buffer = await next.arrayBuffer();
-      await loadFontIntoSlot(slot, next.name, buffer, next);
+      await run(async (isCurrent) => {
+        const buffer = await next.arrayBuffer();
+        if (!isCurrent()) {
+          // Superseded while reading the file.
+          return;
+        }
+        await loadFontIntoSlot(slot, isCurrent, next.name, buffer, next);
+      }, slot);
     },
-    [bumpLocalFontPickerKey, loadFontIntoSlot, updateSlot]
+    [bumpLocalFontPickerKey, loadFontIntoSlot, run, runSync, updateSlot]
   );
 
   const handleLocalFont = useCallback(
     (slot: Slot, fileName: string, buffer: ArrayBuffer) => {
-      loadFontIntoSlot(slot, fileName, buffer, null);
+      run(
+        (isCurrent) =>
+          loadFontIntoSlot(slot, isCurrent, fileName, buffer, null),
+        slot
+      ).catch(() => {
+        // Best-effort — loadFontIntoSlot already reports its own errors via
+        // slot state, so there's nothing further to do on rejection here.
+      });
     },
-    [loadFontIntoSlot]
+    [loadFontIntoSlot, run]
   );
 
   const handleLocalFontClear = useCallback(
     (slot: Slot) => {
-      loadTokens.current[slot]++;
-      clearFontFace(slot);
-      updateSlot(slot, { ...EMPTY_SLOT });
+      runSync(() => {
+        clearFontFace(slot);
+        updateSlot(slot, { ...EMPTY_SLOT });
+      }, slot);
     },
-    [updateSlot]
+    [runSync, updateSlot]
   );
 
   const handleFontSizeChange = useCallback(
@@ -659,6 +686,7 @@ export default function CompareView() {
         <Grid columns={COMPARE_GRID_COLUMNS} gap={4} style={COMPARE_GRID_STYLE}>
           <GridSpan columns={1}>
             <CompareFontInput
+              isLoading={isLoading("left")}
               localFontPickerKey={localFontPickerKeys.left}
               onChange={handleFile}
               onLocalFontClear={handleLocalFontClear}
@@ -669,6 +697,7 @@ export default function CompareView() {
           </GridSpan>
           <GridSpan columns={1}>
             <CompareFontInput
+              isLoading={isLoading("right")}
               localFontPickerKey={localFontPickerKeys.right}
               onChange={handleFile}
               onLocalFontClear={handleLocalFontClear}

@@ -9,6 +9,35 @@ import {
 } from "./opentype-feature-names";
 import { getFeatureVariantCss } from "./opentype-feature-variants";
 
+/** The font's own name-table family name (and the uploaded file's name) are
+ * attacker-controlled — a crafted upload could otherwise break out of a CSS
+ * string value/`url()` here. This output isn't executed as live CSS by this
+ * app (copy/download text only), but it's cheap to keep safe for anyone who
+ * pastes it into their own stylesheet. Strips control chars first: an
+ * unescaped raw newline (CR/LF/FF) inside a quoted CSS string token
+ * terminates the string early per the CSS Syntax spec, so escaping just the
+ * backslash and quote isn't enough. */
+function escapeCssString(value: string): string {
+  const withoutControlChars = Array.from(value)
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 0;
+      return !(code <= 0x1f || code === 0x7f);
+    })
+    .join("");
+  return withoutControlChars.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+const ASTERISK_SLASH = ["*", "/"].join("");
+
+/** CSS comments have no escape mechanism — the only way to keep a
+ * comment-closing sequence in attacker-controlled text from ending the
+ * comment early is to make sure that exact substring never appears. Built
+ * from a joined array (not a regex/string literal containing "*" then "/")
+ * so no formatter or editor mistakes it for the start of a block comment. */
+function escapeCssComment(value: string): string {
+  return escapeCssString(value).split(ASTERISK_SLASH).join("* /");
+}
+
 export interface StylesheetOptions {
   /** URL/path to use in `src: url(...)` — the uploaded file's name by default. */
   fileName: string;
@@ -104,8 +133,8 @@ function buildFontFace(
   options: StylesheetOptions
 ): string {
   const lines = [
-    `  font-family: "${metadata.familyName}";`,
-    `  src: url("${options.fileName}") format("${cssFormatHint(metadata)}");`,
+    `  font-family: "${escapeCssString(metadata.familyName)}";`,
+    `  src: url("${escapeCssString(options.fileName)}") format("${cssFormatHint(metadata)}");`,
   ];
 
   const wght = metadata.variationAxes.find((axis) => axis.tag === "wght");
@@ -359,7 +388,7 @@ function buildPalettesCss(
   for (let i = FIRST_OVERRIDE_PALETTE_INDEX; i < palettes.length; i++) {
     const paletteName = className(namespace, `palette-${i}`);
     valueBlocks.push(
-      `@font-palette-values --${paletteName} {\n  font-family: "${metadata.familyName}";\n  base-palette: ${i};\n}`
+      `@font-palette-values --${paletteName} {\n  font-family: "${escapeCssString(metadata.familyName)}";\n  base-palette: ${i};\n}`
     );
     classBlocks.push(`.${paletteName} {\n  font-palette: --${paletteName};\n}`);
   }
@@ -396,7 +425,7 @@ export function generateStylesheet(
   options: StylesheetOptions
 ): string {
   const intro = `/**
- * CSS for ${metadata.familyName}
+ * CSS for ${escapeCssComment(metadata.familyName)}
  */`;
 
   const sections = [

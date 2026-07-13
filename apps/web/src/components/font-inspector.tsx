@@ -11,7 +11,8 @@ import { compareAccuracy } from "@sora-type/font-engine/font-benchmark";
 import { isColorFont } from "@sora-type/font-engine/font-color-palettes";
 import {
   clearFontFace,
-  loadFontFace,
+  decodeFontFace,
+  registerFontFace,
   toCssFontFamily,
 } from "@sora-type/font-engine/font-face";
 import type { LanguageSupportResult } from "@sora-type/font-engine/font-language-detection";
@@ -48,6 +49,7 @@ import GlyphGrid, {
   getEncodedCodePointCount,
   MAX_GLYPHS,
 } from "@/components/glyph-grid";
+import { useLatestAsync } from "@/hooks/use-latest-async";
 
 const FILE_EXTENSION = /\.[^./]+$/;
 const INSPECTOR_FONT_SLOT = "inspector";
@@ -192,7 +194,10 @@ export default function FontInspector() {
   // own nameID 19 ("Sample text"), so swapping fonts refreshes it but typing
   // a custom preview sticks across font swaps.
   const autoFilledPreviewTextRef = useRef<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Structurally guards every load entry point (file drop, local-font pick,
+  // URL fetch, placeholder fetch) against a slower rival resolving later and
+  // overwriting state with a stale result — see use-latest-async.ts.
+  const { isLoading, run, runSync } = useLatestAsync();
   const [isExporting, setIsExporting] = useState(false);
   const [isPlaceholder, setIsPlaceholder] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -206,17 +211,23 @@ export default function FontInspector() {
   const loadFontFromBuffer = useCallback(
     (fileName: string, buffer: ArrayBuffer) => {
       const openedFont = openFont(buffer);
+      // Built from `metadata` (not straight off `openedFont`) so it shares
+      // the same missing/garbled-name-table fallback — some web-optimized
+      // fonts ship a blank or single-placeholder-character name here while
+      // every other field stays intact, and reading `openedFont.fullName`
+      // directly would bypass that fallback and show the raw garbage.
+      const metadata = extractFontMetadata(openedFont, fileName);
       setLoadedFont({
         fileName,
         fileSizeBytes: buffer.byteLength,
-        fullName: openedFont.fullName,
-        familyName: openedFont.familyName,
-        style: openedFont.subfamilyName,
+        fullName: metadata.fullName,
+        familyName: metadata.familyName,
+        style: metadata.style,
         numGlyphs: openedFont.numGlyphs,
       });
       setFont(openedFont);
       setFontBuffer(buffer);
-      setFontMetadata(extractFontMetadata(openedFont, fileName));
+      setFontMetadata(metadata);
       setLanguages(reportAllLanguages(openedFont, buffer));
       setAccuracyDiscrepancies(
         compareAccuracy(openedFont, buffer).filter((r) => r.discrepancy)
@@ -234,52 +245,66 @@ export default function FontInspector() {
     []
   );
 
-  const loadPlaceholder = useCallback(async () => {
-    try {
-      const response = await fetch(PLACEHOLDER_FONT_URL);
-      const buffer = await response.arrayBuffer();
-      loadFontFromBuffer(PLACEHOLDER_FONT_NAME, buffer);
-      setIsPlaceholder(true);
-    } catch {
-      setLoadedFont(null);
-      setFont(null);
-      setFontBuffer(null);
-      setFontMetadata(null);
-      setLanguages([]);
-      setAccuracyDiscrepancies([]);
-      setLanguageSystems([]);
-      setCssFontFamily(null);
-      setIsPlaceholder(false);
-    }
-  }, [loadFontFromBuffer]);
+  const loadPlaceholder = useCallback(
+    () =>
+      run(async (isCurrent) => {
+        try {
+          const response = await fetch(PLACEHOLDER_FONT_URL);
+          const buffer = await response.arrayBuffer();
+          if (!isCurrent()) {
+            return;
+          }
+          loadFontFromBuffer(PLACEHOLDER_FONT_NAME, buffer);
+          setIsPlaceholder(true);
+        } catch {
+          if (!isCurrent()) {
+            return;
+          }
+          setLoadedFont(null);
+          setFont(null);
+          setFontBuffer(null);
+          setFontMetadata(null);
+          setLanguages([]);
+          setAccuracyDiscrepancies([]);
+          setLanguageSystems([]);
+          setCssFontFamily(null);
+          setIsPlaceholder(false);
+        }
+      }),
+    [loadFontFromBuffer, run]
+  );
 
   const loadFromUrl = useCallback(
-    async (url: URL) => {
-      setIsPlaceholder(false);
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(url, { mode: "cors" });
-        if (!response.ok) {
-          throw new Error(`Could not fetch font (${response.status})`);
+    (url: URL) =>
+      run(async (isCurrent) => {
+        setIsPlaceholder(false);
+        setError(null);
+        try {
+          const response = await fetch(url, { mode: "cors" });
+          if (!response.ok) {
+            throw new Error(`Could not fetch font (${response.status})`);
+          }
+          const buffer = await response.arrayBuffer();
+          if (!isCurrent()) {
+            return;
+          }
+          loadFontFromBuffer(fileNameFromUrl(url), buffer);
+        } catch {
+          if (!isCurrent()) {
+            return;
+          }
+          setLoadedFont(null);
+          setFont(null);
+          setFontBuffer(null);
+          setFontMetadata(null);
+          setLanguages([]);
+          setAccuracyDiscrepancies([]);
+          setLanguageSystems([]);
+          setCssFontFamily(null);
+          setError(t("urlLoadError"));
         }
-        const buffer = await response.arrayBuffer();
-        loadFontFromBuffer(fileNameFromUrl(url), buffer);
-      } catch {
-        setLoadedFont(null);
-        setFont(null);
-        setFontBuffer(null);
-        setFontMetadata(null);
-        setLanguages([]);
-        setAccuracyDiscrepancies([]);
-        setLanguageSystems([]);
-        setCssFontFamily(null);
-        setError(t("urlLoadError"));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [loadFontFromBuffer, t]
+      }),
+    [loadFontFromBuffer, run, t]
   );
 
   useEffect(() => {
@@ -299,11 +324,16 @@ export default function FontInspector() {
     let cancelled = false;
     const family = toCssFontFamily(INSPECTOR_FONT_SLOT, loadedFont.fileName);
 
-    loadFontFace(INSPECTOR_FONT_SLOT, family, fontBuffer)
-      .then(() => {
-        if (!cancelled) {
-          setCssFontFamily(family);
+    decodeFontFace(family, fontBuffer)
+      .then((fontFace) => {
+        if (cancelled) {
+          // Superseded before decoding finished — discard without ever
+          // registering it, so a cancelled run can't evict the FontFace a
+          // newer run just registered.
+          return;
         }
+        registerFontFace(INSPECTOR_FONT_SLOT, fontFace);
+        setCssFontFamily(family);
       })
       .catch(() => {
         if (!cancelled) {
@@ -330,58 +360,74 @@ export default function FontInspector() {
         return;
       }
 
-      setIsPlaceholder(false);
-      setIsLoading(true);
-      try {
-        const buffer = await next.arrayBuffer();
-        loadFontFromBuffer(next.name, buffer);
-      } catch (err) {
-        setLoadedFont(null);
-        setFont(null);
-        setFontBuffer(null);
-        setFontMetadata(null);
-        setLanguages([]);
-        setAccuracyDiscrepancies([]);
-        setLanguageSystems([]);
-        setCssFontFamily(null);
-        setError(err instanceof Error ? err.message : t("parseError"));
-      } finally {
-        setIsLoading(false);
-      }
+      await run(async (isCurrent) => {
+        setIsPlaceholder(false);
+        try {
+          const buffer = await next.arrayBuffer();
+          if (!isCurrent()) {
+            return;
+          }
+          loadFontFromBuffer(next.name, buffer);
+        } catch (err) {
+          if (!isCurrent()) {
+            return;
+          }
+          setLoadedFont(null);
+          setFont(null);
+          setFontBuffer(null);
+          setFontMetadata(null);
+          setLanguages([]);
+          setAccuracyDiscrepancies([]);
+          setLanguageSystems([]);
+          setCssFontFamily(null);
+          setError(err instanceof Error ? err.message : t("parseError"));
+        }
+      });
     },
-    [loadFontFromBuffer, loadPlaceholder, t]
+    [loadFontFromBuffer, loadPlaceholder, run, t]
   );
 
   const handleLocalFont = useCallback(
     (fileName: string, buffer: ArrayBuffer) => {
-      setFile(null);
-      setError(null);
-      setIsPlaceholder(false);
-      try {
-        loadFontFromBuffer(fileName, buffer);
-      } catch (err) {
-        setLoadedFont(null);
-        setFont(null);
-        setFontBuffer(null);
-        setFontMetadata(null);
-        setLanguages([]);
-        setAccuracyDiscrepancies([]);
-        setLanguageSystems([]);
-        setCssFontFamily(null);
-        setError(err instanceof Error ? err.message : t("parseError"));
-      }
+      runSync(() => {
+        setFile(null);
+        setError(null);
+        setIsPlaceholder(false);
+        try {
+          loadFontFromBuffer(fileName, buffer);
+        } catch (err) {
+          setLoadedFont(null);
+          setFont(null);
+          setFontBuffer(null);
+          setFontMetadata(null);
+          setLanguages([]);
+          setAccuracyDiscrepancies([]);
+          setLanguageSystems([]);
+          setCssFontFamily(null);
+          setError(err instanceof Error ? err.message : t("parseError"));
+        }
+      });
     },
-    [loadFontFromBuffer, t]
+    [loadFontFromBuffer, runSync, t]
   );
 
   async function handleExportPdf() {
-    if (!file) {
+    if (!(fontBuffer && loadedFont)) {
       return;
     }
+    // Always build the export File from fontBuffer/loadedFont rather than
+    // preferring the dropped-file `file` state — `file` is only ever set by
+    // handleFile and can go stale relative to the currently-loaded font
+    // (e.g. drop a file, then load a different font via the local-font
+    // picker, a new `?inspectUrl=`, or the placeholder — none of those
+    // paths touch `file`), which would silently export the wrong font's
+    // bytes. fontBuffer/loadedFont are always updated together by every
+    // load path, so reconstructing from them can't desync.
+    const exportFile = new File([fontBuffer], loadedFont.fileName);
     setIsExporting(true);
     try {
       const formData = new FormData();
-      formData.append("font", file);
+      formData.append("font", exportFile);
       const response = await fetch("/api/export-pdf", {
         method: "POST",
         body: formData,
@@ -395,7 +441,7 @@ export default function FontInspector() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${file.name.replace(FILE_EXTENSION, "")}-report.pdf`;
+      link.download = `${exportFile.name.replace(FILE_EXTENSION, "")}-report.pdf`;
       link.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -526,14 +572,14 @@ export default function FontInspector() {
             <div className={`flex flex-col gap-4 ${COLUMN_SCROLL_CLASS}`}>
               <InspectorFontUpload
                 accept={INSPECTOR_FONT_ACCEPT}
-                isLoading={isLoading}
+                isLoading={isLoading()}
                 onChange={handleFile}
                 status={error ? { type: "error", message: error } : undefined}
                 value={file}
               />
 
               <InspectorLocalFontPicker
-                isDisabled={isLoading}
+                isDisabled={isLoading()}
                 key={localFontPickerKey}
                 onClear={loadPlaceholder}
                 onSelect={handleLocalFont}

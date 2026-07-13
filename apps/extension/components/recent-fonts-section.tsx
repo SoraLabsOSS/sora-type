@@ -82,7 +82,9 @@ export function RecentFontsSection({
                     return await sendMessage(
                       "loadFontSummary",
                       { family: font.family },
-                      tab.id
+                      // `?? 0`: entries saved before frameId tracking was
+                      // added won't have it in persisted storage.
+                      { tabId: tab.id, frameId: font.frameId ?? 0 }
                     );
                   } catch {
                     return { status: "tab-not-found" as const };

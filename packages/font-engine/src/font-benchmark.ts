@@ -59,7 +59,8 @@ export function compareAccuracy(
       script: verified.script,
       cmapOnlySupported,
       shapingVerifiedSupport: verified.support,
-      discrepancy: cmapOnlySupported && verified.support !== "full",
+      discrepancy:
+        cmapOnlySupported && verified.support === "positioning-failed",
     };
   });
 }

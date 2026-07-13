@@ -56,6 +56,8 @@ interface BuiltLanguage {
 
 const WHITESPACE = /\s+/;
 const YAML_EXTENSION = /\.yaml$/;
+const REFERENCE_TOKEN = /^<([A-Za-z0-9-]+)>$/;
+const MAX_REFERENCE_DEPTH = 5;
 
 function tokensToCodePoints(tokens: string[]): number[] {
   const points = new Set<number>();
@@ -65,6 +67,55 @@ function tokensToCodePoints(tokens: string[]): number[] {
     }
   }
   return [...points].sort((a, b) => a - b);
+}
+
+/**
+ * Hyperglot lets a `base` field be (or contain) a `<code>` token meaning
+ * "inherit these characters from language `code`" — e.g. Baharna Arabic's
+ * `base: <arb>` means "same as Standard Arabic", and Ainu's Katakana
+ * orthography is `base: <jpn> ㇷ゚ セ゚ ツ゚ ト゚` ("same as Japanese's
+ * Katakana orthography, plus these 4 extra characters"). Left unresolved,
+ * these tokens get stored as literal "characters" (5 plain Latin codepoints
+ * for "<arb>"), which every font trivially "supports" — silently reporting
+ * full language support regardless of actual script coverage. Resolves by
+ * looking up the referenced language's orthography matching the same
+ * script (falling back to its first orthography), recursively — bounded by
+ * `depth` in case of an unexpected reference cycle. Unresolvable references
+ * (unknown code, no usable `base`) are dropped rather than re-emitted as a
+ * literal token.
+ */
+function resolveBaseTokens(
+  tokens: string[],
+  script: string,
+  rawByCode: Map<string, HyperglotLanguage>,
+  depth = 0
+): string[] {
+  if (depth >= MAX_REFERENCE_DEPTH) {
+    return [];
+  }
+
+  const resolved: string[] = [];
+  for (const token of tokens) {
+    const match = token.match(REFERENCE_TOKEN);
+    if (!match) {
+      resolved.push(token);
+      continue;
+    }
+
+    const refDoc = rawByCode.get(match[1]);
+    const refOrthography =
+      refDoc?.orthographies?.find((o) => o.script === script) ??
+      refDoc?.orthographies?.[0];
+    if (!refOrthography?.base) {
+      continue;
+    }
+
+    const refTokens = refOrthography.base.split(WHITESPACE).filter(Boolean);
+    resolved.push(
+      ...resolveBaseTokens(refTokens, script, rawByCode, depth + 1)
+    );
+  }
+  return resolved;
 }
 
 /** Downloads the Hyperglot repo tarball and extracts it into a temp dir,
@@ -111,27 +162,41 @@ function buildDatabase(dataDir: string): {
   skipped: number;
 } {
   const files = readdirSync(dataDir).filter((f) => f.endsWith(".yaml"));
-  const database: Record<string, BuiltLanguage> = {};
-  let skipped = 0;
 
+  // Read every file first so resolveBaseTokens can look up any language's
+  // raw `base` field regardless of file iteration order (a language's
+  // `<code>` reference may point to a file read later than its own).
+  const rawByCode = new Map<string, HyperglotLanguage>();
   for (const file of files) {
     const code = file.replace(YAML_EXTENSION, "");
     const raw = readFileSync(join(dataDir, file), "utf8");
-    const doc = load(raw) as HyperglotLanguage;
+    rawByCode.set(code, load(raw) as HyperglotLanguage);
+  }
 
+  const database: Record<string, BuiltLanguage> = {};
+  let skipped = 0;
+
+  for (const [code, doc] of rawByCode) {
     const orthographies = (doc.orthographies ?? [])
       .filter((o) => o.base)
       .map((o) => {
+        const script = o.script ?? "Unknown";
+        const rawTokens = (o.base as string).split(WHITESPACE).filter(Boolean);
         const characters = [
-          ...new Set((o.base as string).split(WHITESPACE).filter(Boolean)),
+          ...new Set(resolveBaseTokens(rawTokens, script, rawByCode)),
         ];
         return {
-          script: o.script ?? "Unknown",
+          script,
           status: o.status ?? "primary",
           characters,
           base: tokensToCodePoints(characters),
         };
-      });
+      })
+      // A fully-unresolvable reference chain resolves to zero characters —
+      // drop it rather than keep an empty orthography, which would
+      // vacuously "pass" every coverage check the same way the original
+      // unresolved-token bug did, just via a different path.
+      .filter((o) => o.characters.length > 0);
 
     if (orthographies.length === 0 || !doc.name) {
       skipped++;

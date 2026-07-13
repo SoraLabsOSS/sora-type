@@ -19,12 +19,45 @@ function hasDirectText(element: Element): boolean {
   return false;
 }
 
-function isVisible(element: Element): boolean {
-  return (element as HTMLElement).offsetParent !== null;
+function isVisible(element: Element, style: CSSStyleDeclaration): boolean {
+  if (
+    style.display === "none" ||
+    style.visibility === "hidden" ||
+    style.opacity === "0"
+  ) {
+    return false;
+  }
+  // `offsetParent` is null for `position: fixed` elements even when they're
+  // genuinely on screen, so check actual layout boxes instead.
+  return element.getClientRects().length > 0;
 }
 
 function styleKey(computed: CSSStyleDeclaration): string {
   return `${computed.fontFamily}|${computed.fontWeight}|${computed.fontStyle}`;
+}
+
+function toSortedSummaries(counts: Map<string, number>): PageFontSummary[] {
+  return [...counts.entries()]
+    .map(([family, elementCount]) => ({ family, elementCount }))
+    .sort((a, b) => b.elementCount - a.elementCount);
+}
+
+/**
+ * Combines each frame's own `scanPageFonts()` result into one page-wide
+ * summary, summing element counts for families that appear in more than one
+ * frame (e.g. a shared brand font used by both the parent page and an
+ * embedded iframe).
+ */
+export function mergeFrameFontSummaries(
+  perFrame: PageFontSummary[][]
+): PageFontSummary[] {
+  const counts = new Map<string, number>();
+  for (const fonts of perFrame) {
+    for (const { family, elementCount } of fonts) {
+      counts.set(family, (counts.get(family) ?? 0) + elementCount);
+    }
+  }
+  return toSortedSummaries(counts);
 }
 
 /**
@@ -44,8 +77,9 @@ export function scanPageFonts(): PageFontSummary[] {
   let walked = 0;
 
   function visit(element: Element) {
-    if (isVisible(element) && hasDirectText(element)) {
-      const key = styleKey(getComputedStyle(element));
+    const style = getComputedStyle(element);
+    if (isVisible(element, style) && hasDirectText(element)) {
+      const key = styleKey(style);
       let family = styleCache.get(key);
       if (family === undefined) {
         family = detectRenderedFont(element).family;
@@ -53,21 +87,28 @@ export function scanPageFonts(): PageFontSummary[] {
       }
       counts.set(family, (counts.get(family) ?? 0) + 1);
     }
+    // Web Components render their content into a separate shadow tree that
+    // a TreeWalker rooted at document.body never descends into — walk it
+    // explicitly so text inside open shadow roots isn't invisible to scans.
+    if (element.shadowRoot) {
+      walkRoot(element.shadowRoot);
+    }
   }
 
-  visit(document.body);
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_ELEMENT
-  );
-  let node = walker.nextNode();
-  while (node && walked < MAX_ELEMENTS_WALKED) {
-    visit(node as Element);
-    walked++;
-    node = walker.nextNode();
+  function walkRoot(root: Element | ShadowRoot) {
+    if (root instanceof Element) {
+      visit(root);
+    }
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    let node = walker.nextNode();
+    while (node && walked < MAX_ELEMENTS_WALKED) {
+      visit(node as Element);
+      walked++;
+      node = walker.nextNode();
+    }
   }
 
-  return [...counts.entries()]
-    .map(([family, elementCount]) => ({ family, elementCount }))
-    .sort((a, b) => b.elementCount - a.elementCount);
+  walkRoot(document.body);
+
+  return toSortedSummaries(counts);
 }

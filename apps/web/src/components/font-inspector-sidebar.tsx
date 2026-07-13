@@ -205,7 +205,7 @@ export function FontInspectorSidebar({
 
       <div className="mt-auto">
         <Button
-          isDisabled={isPlaceholder}
+          isDisabled={isPlaceholder || !loadedFont}
           isLoading={isExporting}
           label={t("exportPdf")}
           onClick={onExportPdf}

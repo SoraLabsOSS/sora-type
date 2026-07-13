@@ -114,6 +114,34 @@ function readName(font: FontkitFont, key: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+const HAS_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
+
+/**
+ * Some web-optimized/subsetted fonts (seen in the wild on Webflow's "WebXL"
+ * pipeline) ship a blank or single-placeholder-character family/full/
+ * subfamily name while every other name-table field stays intact — fontkit
+ * faithfully returns whatever's actually there (e.g. an empty string, or a
+ * lone "¶"), which then rendered as-is looks like a Sora Type display bug
+ * rather than a broken font. A name with no letters or digits at all isn't
+ * a usable display name regardless of what codepoint it happens to be.
+ */
+function isUsableName(value: string | null | undefined): value is string {
+  return Boolean(value && HAS_LETTER_OR_DIGIT.test(value));
+}
+
+const FILE_EXTENSION_SUFFIX = /\.[^./]+$/;
+const NAME_SEPARATOR_CHARS = /[-_]+/g;
+
+/** Derives a readable fallback name from the uploaded file name when the
+ * font's own name-table strings aren't usable. */
+function nameFromFileName(fileName: string): string {
+  const spaced = fileName
+    .replace(FILE_EXTENSION_SUFFIX, "")
+    .replace(NAME_SEPARATOR_CHARS, " ")
+    .trim();
+  return spaced.length > 0 ? spaced : "Untitled font";
+}
+
 /**
  * A font can author its own recommended preview sentence via the `name`
  * table's nameID 19 ("Sample text") — e.g. a display face might ship
@@ -282,11 +310,27 @@ export function extractFontMetadata(
       ? String(font.version).trim() || null
       : null);
 
+  const familyIsUsable = isUsableName(font.familyName);
+  const familyName = familyIsUsable
+    ? font.familyName
+    : nameFromFileName(fileName);
+  const style = isUsableName(font.subfamilyName)
+    ? font.subfamilyName
+    : "Regular";
+  // Only append style when familyName came from real name-table data —
+  // when it's itself a filename-derived fallback (which often already
+  // reads like "Foo Regular WebXL"), appending style again would just
+  // duplicate it (e.g. "...WebXL Regular").
+  let fullName = font.fullName;
+  if (!isUsableName(fullName)) {
+    fullName = familyIsUsable ? `${familyName} ${style}`.trim() : familyName;
+  }
+
   return {
     fileName,
-    fullName: font.fullName,
-    familyName: font.familyName,
-    style: font.subfamilyName,
+    fullName,
+    familyName,
+    style,
     postscriptName: font.postscriptName,
     format: font.type,
     version,

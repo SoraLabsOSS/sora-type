@@ -1,5 +1,5 @@
 import { TriangleAlert, Type } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { i18n } from "#i18n";
 import { FontRow } from "@/components/font-row";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,8 +15,12 @@ import { ItemGroup } from "@/components/ui/item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import type { LoadFontSummaryResult } from "@/utils/load-font-summary";
 import { sendMessage } from "@/utils/messaging";
-import type { PageFontSummary } from "@/utils/scan-page-fonts";
+import {
+  mergeFrameFontSummaries,
+  type PageFontSummary,
+} from "@/utils/scan-page-fonts";
 
 type ScanStatus = "loading" | "ready" | "unavailable";
 
@@ -40,14 +44,68 @@ export function PageFontsSection({
   const [status, setStatus] = useState<ScanStatus>("loading");
   const [fonts, setFonts] = useState<PageFontSummary[]>([]);
   const [tabId, setTabId] = useState<number | null>(null);
+  // The browser window this side panel instance belongs to — tab listeners
+  // below fire for every window, so this scopes rescans to our own window
+  // instead of hijacking `tabId` when the user switches tabs elsewhere.
+  const windowIdRef = useRef<number | null>(null);
+  // Which frame(s) reported each family in the most recent scan, so
+  // onLoadSummary can target the right frame instead of guessing.
+  const familyFrameIndexRef = useRef<Map<string, number[]>>(new Map());
+  // Guards against out-of-order resolution: switching tabs quickly (or even
+  // rescanning the same tab twice, e.g. two "complete" tabs.onUpdated events
+  // for one navigation) starts a new scan before the previous one settles,
+  // and nothing otherwise stops the slower, now-stale scan from overwriting
+  // the UI after a faster, newer one already committed. A monotonic token
+  // (not just the target tabId) is required — two overlapping scans for the
+  // *same* tabId would otherwise both look "current" to an id-only check.
+  const scanTokenRef = useRef(0);
 
   const scan = useCallback(async (id: number) => {
+    const token = ++scanTokenRef.current;
     setStatus("loading");
     try {
-      const result = await sendMessage("scanPageFonts", undefined, id);
-      setFonts(result);
+      const frameIds = await sendMessage("getKnownFrames", { tabId: id });
+      const settled = await Promise.allSettled(
+        frameIds.map((frameId) =>
+          sendMessage("scanPageFonts", undefined, { tabId: id, frameId })
+        )
+      );
+
+      if (scanTokenRef.current !== token) {
+        // Superseded by a newer scan while these were in flight.
+        return;
+      }
+
+      const index = new Map<string, number[]>();
+      const perFrame: PageFontSummary[][] = [];
+      for (const [i, result] of settled.entries()) {
+        if (result.status !== "fulfilled") {
+          continue;
+        }
+        perFrame.push(result.value);
+        for (const { family } of result.value) {
+          index.set(family, [...(index.get(family) ?? []), frameIds[i]]);
+        }
+      }
+
+      if (perFrame.length === 0 && frameIds.length > 0) {
+        // Every known frame's scan rejected (e.g. content script never
+        // loaded on a restricted page) — Promise.allSettled never rejects,
+        // so without this check we'd silently fall through to "ready" with
+        // zero fonts, which looks identical to a genuinely font-less page.
+        familyFrameIndexRef.current = new Map();
+        setFonts([]);
+        setStatus("unavailable");
+        return;
+      }
+
+      familyFrameIndexRef.current = index;
+      setFonts(mergeFrameFontSummaries(perFrame));
       setStatus("ready");
     } catch {
+      if (scanTokenRef.current !== token) {
+        return;
+      }
       setFonts([]);
       setStatus("unavailable");
     }
@@ -62,13 +120,17 @@ export function PageFontsSection({
       if (tab?.id === undefined) {
         return;
       }
+      windowIdRef.current = tab.windowId ?? null;
       setTabId(tab.id);
       await scan(tab.id);
     }
 
     scanActiveTab();
 
-    function handleActivated(info: { tabId: number }) {
+    function handleActivated(info: { tabId: number; windowId: number }) {
+      if (info.windowId !== windowIdRef.current) {
+        return;
+      }
       setTabId(info.tabId);
       scan(info.tabId);
     }
@@ -76,9 +138,13 @@ export function PageFontsSection({
     function handleUpdated(
       updatedTabId: number,
       changeInfo: { status?: string },
-      tab: { active?: boolean }
+      tab: { active?: boolean; windowId?: number }
     ) {
-      if (changeInfo.status === "complete" && tab.active) {
+      if (
+        changeInfo.status === "complete" &&
+        tab.active &&
+        tab.windowId === windowIdRef.current
+      ) {
         setTabId(updatedTabId);
         scan(updatedTabId);
       }
@@ -173,9 +239,28 @@ export function PageFontsSection({
                 badge={font.elementCount}
                 family={font.family}
                 key={font.family}
-                onLoadSummary={() =>
-                  sendMessage("loadFontSummary", { family: font.family }, tabId)
-                }
+                onLoadSummary={async () => {
+                  const candidates = familyFrameIndexRef.current.get(
+                    font.family
+                  ) ?? [0];
+                  let lastResult: LoadFontSummaryResult | null = null;
+                  for (const frameId of candidates) {
+                    try {
+                      const result = await sendMessage(
+                        "loadFontSummary",
+                        { family: font.family },
+                        { tabId, frameId }
+                      );
+                      if (result.status === "loaded") {
+                        return result;
+                      }
+                      lastResult = result;
+                    } catch {
+                      // Try the next candidate frame.
+                    }
+                  }
+                  return lastResult ?? { status: "tab-not-found" as const };
+                }}
               />
             ))}
           </ItemGroup>

@@ -1,6 +1,6 @@
 import { createRoot, type Root } from "react-dom/client";
 import { loadFontSummary } from "@/utils/load-font-summary";
-import { onMessage } from "@/utils/messaging";
+import { onMessage, sendMessage } from "@/utils/messaging";
 import { scanPageFonts } from "@/utils/scan-page-fonts";
 import { pickerEnabled } from "@/utils/storage";
 import { PickerRoot } from "./picker-root";
@@ -10,8 +10,17 @@ const Z_INDEX_MAX = 2_147_483_647;
 
 export default defineContentScript({
   matches: ["*://*/*"],
+  allFrames: true,
   cssInjectionMode: "ui",
   async main(ctx) {
+    // As early as possible so the background's frame registry (used to
+    // target scans/loads at this exact frame) is populated before anything
+    // else in this frame runs.
+    sendMessage("registerFrame").catch(() => {
+      // Best-effort — background may not be awake yet, or the extension
+      // context was invalidated (reload/update). Not worth surfacing.
+    });
+
     // Independent of the picker toggle — scanning/loading are passive (just
     // read computed styles/fetch a file, inject no UI) so they work whether
     // or not the picker itself is armed.
