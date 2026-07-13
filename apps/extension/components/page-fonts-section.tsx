@@ -160,7 +160,7 @@ export function PageFontsSection({
   }, [scan]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
       {showHeading ? (
         <div className="flex items-center justify-between">
           <h2 className="font-medium text-sm">
@@ -232,8 +232,8 @@ export function PageFontsSection({
       ) : null}
 
       {fonts.length > 0 && tabId !== null ? (
-        <ScrollArea className="min-h-0 flex-1">
-          <ItemGroup className="gap-2 pr-3">
+        <ScrollArea className="min-h-0 min-w-0 flex-1">
+          <ItemGroup className="min-w-0 gap-2 pr-3">
             {fonts.map((font) => (
               <FontRow
                 badge={font.elementCount}

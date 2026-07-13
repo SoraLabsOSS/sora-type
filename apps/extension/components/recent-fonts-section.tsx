@@ -47,7 +47,7 @@ export function RecentFontsSection({
   const visibleFonts = limit === undefined ? fonts : fonts.slice(0, limit);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
       {showHeading ? (
         <h2 className="font-medium text-sm">{resolvedHeading}</h2>
       ) : null}
@@ -64,9 +64,11 @@ export function RecentFontsSection({
         </Empty>
       ) : (
         <ScrollArea
-          className={limit === undefined ? "min-h-0 flex-1" : "max-h-48"}
+          className={
+            limit === undefined ? "min-h-0 min-w-0 flex-1" : "max-h-48 min-w-0"
+          }
         >
-          <ItemGroup className="gap-2 pr-3">
+          <ItemGroup className="min-w-0 gap-2 pr-3">
             {visibleFonts.map((font) => (
               <FontRow
                 description={font.pageTitle}

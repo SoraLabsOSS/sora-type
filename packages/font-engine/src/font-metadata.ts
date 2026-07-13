@@ -115,6 +115,9 @@ function readName(font: FontkitFont, key: string): string | null {
 }
 
 const HAS_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
+/** Placeholder strings some subsetting pipelines write into name IDs when
+ * they blank the real family/full/postscript names (seen on Webflow WebXL). */
+const PLACEHOLDER_NAME = /^(font|untitled|null|undefined)$/i;
 
 /**
  * Some web-optimized/subsetted fonts (seen in the wild on Webflow's "WebXL"
@@ -126,20 +129,81 @@ const HAS_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
  * a usable display name regardless of what codepoint it happens to be.
  */
 function isUsableName(value: string | null | undefined): value is string {
-  return Boolean(value && HAS_LETTER_OR_DIGIT.test(value));
+  if (!value) {
+    return false;
+  }
+  const trimmed = value.trim();
+  return HAS_LETTER_OR_DIGIT.test(trimmed) && !PLACEHOLDER_NAME.test(trimmed);
 }
 
 const FILE_EXTENSION_SUFFIX = /\.[^./]+$/;
 const NAME_SEPARATOR_CHARS = /[-_]+/g;
+/** Webflow (and similar CDNs) prefix assets with a long hex id:
+ * `69c69d75a0cda52c270e65bf_SuisseIntlMono-Regular-WebXL.woff2`. */
+const CDN_HASH_PREFIX = /^[a-f0-9]{16,}[_-]+/i;
+/** Export-pipeline suffixes that aren't part of the typeface name. */
+const WEBFONT_EXPORT_SUFFIX = /[-_]?(?:WebXL|WebOF|webfont|subset)$/i;
 
 /** Derives a readable fallback name from the uploaded file name when the
  * font's own name-table strings aren't usable. */
 function nameFromFileName(fileName: string): string {
   const spaced = fileName
     .replace(FILE_EXTENSION_SUFFIX, "")
+    .replace(CDN_HASH_PREFIX, "")
+    .replace(WEBFONT_EXPORT_SUFFIX, "")
     .replace(NAME_SEPARATOR_CHARS, " ")
+    .replace(/\s+/g, " ")
     .trim();
   return spaced.length > 0 ? spaced : "Untitled font";
+}
+
+/** Prefer typographic (preferredFamily) names, then the legacy family name,
+ * then a cleaned PostScript name, then the file name — skipping blank /
+ * placeholder name-table entries from subsetting pipelines. */
+function resolveFamilyName(
+  font: FontkitFont,
+  fileName: string
+): {
+  familyName: string;
+  fromNameTable: boolean;
+} {
+  const preferred = readName(font, "preferredFamily");
+  if (isUsableName(preferred)) {
+    return { familyName: preferred, fromNameTable: true };
+  }
+  if (isUsableName(font.familyName)) {
+    return { familyName: font.familyName.trim(), fromNameTable: true };
+  }
+  if (isUsableName(font.postscriptName)) {
+    return {
+      familyName: font.postscriptName.replace(NAME_SEPARATOR_CHARS, " ").trim(),
+      fromNameTable: false,
+    };
+  }
+  return { familyName: nameFromFileName(fileName), fromNameTable: false };
+}
+
+function resolveStyleName(font: FontkitFont): string {
+  const preferred = readName(font, "preferredSubfamily");
+  if (isUsableName(preferred)) {
+    return preferred;
+  }
+  if (isUsableName(font.subfamilyName)) {
+    return font.subfamilyName.trim();
+  }
+  return "Regular";
+}
+
+/** When the family fallback was derived from a filename like
+ * `Foo-Regular-WebXL`, the style token is often still sitting on the end —
+ * strip it so we don't surface "Foo Regular" + style "Regular". */
+function stripTrailingStyle(familyName: string, style: string): string {
+  const pattern = new RegExp(
+    `(?:^|\\s+)${style.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+    "i"
+  );
+  const stripped = familyName.replace(pattern, "").trim();
+  return stripped.length > 0 ? stripped : familyName;
 }
 
 /**
@@ -310,20 +374,20 @@ export function extractFontMetadata(
       ? String(font.version).trim() || null
       : null);
 
-  const familyIsUsable = isUsableName(font.familyName);
-  const familyName = familyIsUsable
-    ? font.familyName
-    : nameFromFileName(fileName);
-  const style = isUsableName(font.subfamilyName)
-    ? font.subfamilyName
-    : "Regular";
+  const resolved = resolveFamilyName(font, fileName);
+  const style = resolveStyleName(font);
+  const familyName = resolved.fromNameTable
+    ? resolved.familyName
+    : stripTrailingStyle(resolved.familyName, style);
   // Only append style when familyName came from real name-table data —
-  // when it's itself a filename-derived fallback (which often already
-  // reads like "Foo Regular WebXL"), appending style again would just
-  // duplicate it (e.g. "...WebXL Regular").
+  // when it's itself a filename/postscript-derived fallback (which often
+  // already reads like "Foo Regular"), appending style again would just
+  // duplicate it (e.g. "...Regular Regular").
   let fullName = font.fullName;
-  if (!isUsableName(fullName)) {
-    fullName = familyIsUsable ? `${familyName} ${style}`.trim() : familyName;
+  if (isUsableName(fullName)) {
+    fullName = fullName.trim();
+  } else {
+    fullName = `${familyName} ${style}`.trim();
   }
 
   return {
@@ -331,7 +395,9 @@ export function extractFontMetadata(
     fullName,
     familyName,
     style,
-    postscriptName: font.postscriptName,
+    postscriptName: isUsableName(font.postscriptName)
+      ? font.postscriptName
+      : familyName.replace(/\s+/g, ""),
     format: font.type,
     version,
     copyright: font.copyright?.trim() || readName(font, "copyright"),
@@ -390,7 +456,9 @@ export function buildFontSummaryFields(
   scriptSummary?: string
 ): FontDetailField[] {
   const fields: Array<FontDetailField | null> = [
-    { label: "Font family", value: metadata.familyName },
+    metadata.familyName.trim()
+      ? { label: "Font family", value: metadata.familyName }
+      : null,
     metadata.designer ? { label: "Designer", value: metadata.designer } : null,
     metadata.version ? { label: "Version", value: metadata.version } : null,
     metadata.license ? { label: "License", value: metadata.license } : null,

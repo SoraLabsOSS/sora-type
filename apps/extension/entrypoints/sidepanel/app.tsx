@@ -24,10 +24,10 @@ function App() {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col gap-4 p-4">
+    <div className="flex h-screen min-w-0 flex-col gap-4 p-4">
       <h1 className="font-semibold text-lg">{i18n.t("sidepanel.title")}</h1>
       <Tabs
-        className="flex min-h-0 flex-1 flex-col"
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
         onValueChange={(value) => {
           if (value === "page" || value === "recent") {
             setActiveTab(value);
@@ -43,11 +43,14 @@ function App() {
             {i18n.t("sidepanel.recentlyInspected.heading")}
           </TabsTrigger>
         </TabsList>
-        <TabsContent className="mt-3 flex min-h-0 flex-1 flex-col" value="page">
+        <TabsContent
+          className="mt-3 flex min-h-0 min-w-0 flex-1 flex-col"
+          value="page"
+        >
           <PageFontsSection showHeading={false} />
         </TabsContent>
         <TabsContent
-          className="mt-3 flex min-h-0 flex-1 flex-col"
+          className="mt-3 flex min-h-0 min-w-0 flex-1 flex-col"
           value="recent"
         >
           <RecentFontsSection showHeading={false} />

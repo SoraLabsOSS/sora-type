@@ -98,10 +98,17 @@ export function FontRow({
       : i18n.t("recentFontRow.loadRealFontName");
 
   return (
-    <Item render={<li />} size="sm" variant="outline">
-      <ItemContent>
-        <ItemHeader>
-          <ItemTitle className="truncate">{family}</ItemTitle>
+    <Item
+      className="min-w-0 overflow-hidden"
+      render={<li />}
+      size="sm"
+      variant="outline"
+    >
+      <ItemContent className="min-w-0">
+        <ItemHeader className="min-w-0">
+          <ItemTitle className="min-w-0 max-w-full truncate">
+            {family}
+          </ItemTitle>
           {badge === undefined ? null : (
             <ItemActions>
               <Badge variant="secondary">{badge}</Badge>
@@ -109,7 +116,9 @@ export function FontRow({
           )}
         </ItemHeader>
         {description ? (
-          <ItemDescription className="truncate">{description}</ItemDescription>
+          <ItemDescription className="min-w-0 truncate">
+            {description}
+          </ItemDescription>
         ) : null}
 
         {loadAction === "side-panel" ? (
