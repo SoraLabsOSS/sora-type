@@ -1,36 +1,26 @@
-# sora-type
+# Sora Type
 
-A browser-based font inspector — drag and drop OpenType or TrueType files to explore what's inside. Supports OTF, TTF, WOFF, and WOFF2. Everything runs client-side; no server required.
+A font inspector that runs entirely in your browser. Drop in an OTF, TTF, WOFF, or WOFF2 file and see its metadata, glyph coverage, language support, and OpenType layout features — or load two fonts side by side to compare them. Everything runs client-side in WebAssembly (fontkit + harfbuzzjs); your font files never leave your device.
 
-## UI
+**Live:** [type.soralabs.io.vn](https://type.soralabs.io.vn) · **Extension:** on-page font picker, see [`apps/extension`](apps/extension) (pending store review — load unpacked to try it now)
 
-The interface uses **primitives from [Sora UI](https://ui.soralabs.io.vn/)** (via the `@soralabs` shadcn registry), styled with Tailwind CSS.
+## Features
 
-## Planned features
-
-- Font metadata: name, style, version, copyright (when available)
-- Display all glyphs and per-glyph details
-- Detect and show OpenType features
-- Detect and show ligatures
-- Detect supported languages
-- Show font table data
-- Font preview with sample text and waterfall lines
-- Live type tester
-- Variable font support
-
-Planned subpages: compare two fonts, language report, Vertical Metrics Report, Advance Width Report, glyph search.
+- **Inspector** — full metadata and a glyph grid groupable by Unicode category; language-support checking that verifies real HarfBuzz shaping/mark-positioning, not just character coverage; a variable-font tester with live axis sliders, named-instance presets, and one-click `font-variation-settings` CSS; OpenType layout-feature toggling on real text plus COLR/CPAL color palette inspection; a raw-table browser that decodes every OpenType table field by field; and CSS/subsetting tools plus full PDF report export.
+- **Compare** — two fonts side by side: matched-size text and waterfall reading, independent variable-axis sliders per font, a full glyph/OpenType-feature diff, a glyph-outline overlay with baseline/x-height/cap-height guides, and pairing diagnostics that explain x-height/weight/width/slant/serif-style differences in plain language.
+- **Browser extension** — identify the actually-rendered font on any web page via an on-page picker (canvas pixel-diffing, not just reading the CSS stack), scan a whole page's fonts across frames, and jump straight into the full inspector. See [`apps/extension/README.md`](apps/extension/README.md).
 
 ## Tech stack
 
 | Purpose | Library / tool |
 |---------|----------------|
 | Framework | [Next.js](https://nextjs.org), [React](https://react.dev) |
-| UI primitives | [Sora UI](https://ui.soralabs.io.vn/) |
+| UI primitives | [Astryx](https://ui.soralabs.io.vn/) (shell/data UI), [Sora UI](https://ui.soralabs.io.vn/) (animation-only primitives) |
 | Styling | [Tailwind CSS](https://tailwindcss.com) |
-| Font parsing | [opentype.js](https://github.com/opentypejs/opentype.js), [fontkit](https://github.com/foliojs/fontkit) |
-| Variable fonts | [variableFonts.js](https://github.com/Monotype/variableFonts.js), opentype.js's built-in `VariationManager` |
+| Font parsing | [fontkit](https://github.com/foliojs/fontkit) |
 | Text shaping | [harfbuzzjs](https://github.com/harfbuzz/harfbuzzjs) — official WASM build of HarfBuzz |
 | Language support data | [Hyperglot](https://github.com/rosettatype/hyperglot) (CLDR-based) |
+| Browser extension | [WXT](https://wxt.dev) |
 | Lint / format | [Ultracite](https://github.com/haydenbleasel/ultracite) (Biome) |
 | Git hooks | [Lefthook](https://github.com/evilmartians/lefthook) |
 
@@ -98,6 +88,8 @@ Copy `apps/web/.env.example` to `apps/web/.env` and fill in values from your [Up
 3. The workflow builds and zips the extension with `bun run zip` (`apps/extension/.output/*-chrome.zip`) and publishes it via the [`wdzeng/edge-addon`](https://github.com/wdzeng/edge-addon) action.
 
 This only *updates* an existing Edge Add-ons listing — the first submission must be done once, manually, through [Partner Center](https://partner.microsoft.com/dashboard/microsoftedge/overview) to obtain a Product ID. The workflow needs three repo secrets: `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY`.
+
+The first submission has been made and is currently pending Microsoft's review (no store link yet). Until it's approved, use `bun run build` / `bun run build:firefox` in `apps/extension` and load `.output/*` unpacked — see [`apps/extension/README.md`](apps/extension/README.md).
 
 ## Credits
 
