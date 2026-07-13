@@ -21,6 +21,10 @@ interface Hover {
   y: number;
 }
 
+/** Soft cap so spam-clicking can't bury the page in panels that each need
+ * an individual X to dismiss. Oldest pins drop first when exceeded. */
+const MAX_PINS = 3;
+
 async function saveToRecent(family: string) {
   await sendMessage("saveRecentFont", { family });
 }
@@ -42,6 +46,8 @@ function generatePinId(): string {
 export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
   const [hover, setHover] = useState<Hover | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
+  const pinsRef = useRef(pins);
+  pinsRef.current = pins;
   const cacheRef = useRef(new WeakMap<Element, FontDetectionResult>());
   // Framer Motion's `dragConstraints` needs a real element to measure
   // against for accurate viewport bounds (an object of `{top,left,...}`
@@ -89,10 +95,20 @@ export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
       event.stopPropagation();
 
       const result = detect(target);
-      setPins((prev) => [
-        ...prev,
-        { id: generatePinId(), result, x: event.clientX, y: event.clientY },
-      ]);
+      setPins((prev) => {
+        // Re-clicking the same family moves that pin instead of stacking
+        // duplicates — spam on one word shouldn't flood the screen.
+        const withoutSameFamily = prev.filter(
+          (pin) => pin.result.family !== result.family
+        );
+        const next = [
+          ...withoutSameFamily,
+          { id: generatePinId(), result, x: event.clientX, y: event.clientY },
+        ];
+        return next.length > MAX_PINS
+          ? next.slice(next.length - MAX_PINS)
+          : next;
+      });
       saveToRecent(result.family).catch(() => {
         // Best-effort — background may not be awake yet, or the extension
         // context was invalidated (reload/update). Not worth surfacing.
@@ -100,9 +116,17 @@ export function PickerRoot({ shadowHost }: { shadowHost: HTMLElement }) {
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        pickerEnabled.setValue(false);
+      if (event.key !== "Escape") {
+        return;
       }
+      // Clear pinned panels first so Escape isn't an all-or-nothing exit
+      // when the user just wanted to dismiss a spam of cards.
+      if (pinsRef.current.length > 0) {
+        event.preventDefault();
+        setPins([]);
+        return;
+      }
+      pickerEnabled.setValue(false);
     }
 
     document.addEventListener("mousemove", handleMouseMove, true);

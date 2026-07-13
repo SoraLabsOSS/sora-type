@@ -51,6 +51,13 @@ export function PickerToggle() {
               i18n.t("popup.pickerHint")
             )}
           </p>
+          <p className="inline-flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground/80 leading-snug">
+            <span>{i18n.t("popup.pickerTipsPrefix")}</span>
+            <Kbd>Esc</Kbd>
+            <span>{i18n.t("popup.pickerTipsClear")}</span>
+            <Kbd>Esc</Kbd>
+            <span>{i18n.t("popup.pickerTipsExit")}</span>
+          </p>
         </div>
         <Switch
           checked={enabled}
