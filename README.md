@@ -10,6 +10,10 @@ A font inspector that runs entirely in your browser. Drop in an OTF, TTF, WOFF, 
 - **Compare** — two fonts side by side: matched-size text and waterfall reading, independent variable-axis sliders per font, a full glyph/OpenType-feature diff, a glyph-outline overlay with baseline/x-height/cap-height guides, and pairing diagnostics that explain x-height/weight/width/slant/serif-style differences in plain language.
 - **Browser extension** — identify the actually-rendered font on any web page via an on-page picker (canvas pixel-diffing, not just reading the CSS stack), scan a whole page's fonts across frames, and jump straight into the full inspector. See [`apps/extension/README.md`](apps/extension/README.md).
 
+## Roadmap
+
+- **Saved/shareable comparisons** — save a Compare session and share it via a short link, so a comparison (e.g. "Font A vs Font B at 14px") can be sent to someone else without both sides re-uploading the same font files. This needs a backend (storage for the font files + session metadata, and a short-link resolver) since the app is currently 100% client-side.
+
 ## Tech stack
 
 | Purpose | Library / tool |
