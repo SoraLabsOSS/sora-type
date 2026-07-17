@@ -4,7 +4,7 @@ import {
   readD1Migrations,
 } from "@cloudflare/vitest-pool-workers/config";
 
-const migrationsPath = path.join(import.meta.dirname, "..", "migrations");
+const migrationsPath = path.join(import.meta.dirname, "..", "drizzle");
 const migrations = await readD1Migrations(migrationsPath);
 
 export default defineWorkersConfig({
