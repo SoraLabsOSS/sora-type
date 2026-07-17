@@ -23,8 +23,9 @@
   "share": {
     "button": "Create share link",
     "sharing": "Uploading…",
-    "copied": "Link copied to clipboard",
-    "copyManual": "Copy this link: {url}",
+    "linkLabel": "Share link",
+    "copyButton": "Copy link",
+    "copied": "Copied!",
     "error": "Could not create share link",
     "hint": "Optional: uploads both fonts to create a private-by-link comparison. Normal use never uploads; inactive shares are deleted after 10 days.",
     "disabledHint": "Load both fonts first",

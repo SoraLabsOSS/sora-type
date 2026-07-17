@@ -23,8 +23,9 @@
   "share": {
     "button": "Tạo link chia sẻ",
     "sharing": "Đang tải lên…",
-    "copied": "Đã sao chép link",
-    "copyManual": "Sao chép link này: {url}",
+    "linkLabel": "Link chia sẻ",
+    "copyButton": "Sao chép link",
+    "copied": "Đã sao chép!",
     "error": "Không tạo được link chia sẻ",
     "hint": "Tùy chọn: tải hai font lên để tạo bản so sánh riêng tư qua link. Dùng bình thường không upload; link không được truy cập sẽ bị xóa sau 10 ngày.",
     "disabledHint": "Cần tải cả hai font trước",
