@@ -10,10 +10,20 @@ export interface CompareSession {
 export type SessionFontSlot = "a" | "b";
 
 const TRAILING_SLASH = /\/$/;
+const HAS_SCHEME = /^https?:\/\//;
 
 export function getApiBaseUrl(): string | null {
   const base = process.env.NEXT_PUBLIC_API_URL;
   if (!base) {
+    return null;
+  }
+  if (!HAS_SCHEME.test(base)) {
+    // Missing scheme resolves as a relative path against the current
+    // origin instead of the API host — fail loudly instead of silently
+    // hitting the wrong URL.
+    console.error(
+      `NEXT_PUBLIC_API_URL is missing "http(s)://": "${base}". Share sessions are disabled until this is fixed.`
+    );
     return null;
   }
   return base.replace(TRAILING_SLASH, "");
