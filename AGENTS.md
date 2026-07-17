@@ -64,5 +64,6 @@ Extension UI text lives in `packages/i18n-content/src/locales/{en,vi}/extension.
 
 - Launch 1: Sora Type web inspector (font-first; not a Sora UI showcase).
 - Launch 2 (later): browser extension — identify fonts on the web; may reuse the same animation primitives.
+- Launch 3 (planned, not started): saved/shareable Compare sessions via short link (see README Roadmap). This is the one deliberate exception to "no backend" — a Cloudflare Worker + D1 + R2 stack, opt-in only (font files stay client-side unless the user explicitly shares). Until work actually begins, treat the app as still fully client-side.
 - Prefer minimal diffs; do not expand scope into unrelated features or docs unless asked.
 <!-- SORA-TYPE:END -->
