@@ -20,6 +20,18 @@
     "placeholderSecond": "Drop another font here, or choose a file"
   },
   "emptyPanel": "Drop fonts above to compare them side by side.",
+  "share": {
+    "button": "Create share link",
+    "sharing": "Uploading…",
+    "copied": "Link copied to clipboard",
+    "copyManual": "Copy this link: {url}",
+    "error": "Could not create share link",
+    "hint": "Optional: uploads both fonts to create a private-by-link comparison. Normal use never uploads; inactive shares are deleted after 10 days.",
+    "disabledHint": "Load both fonts first",
+    "loadingSession": "Loading shared comparison…",
+    "sessionNotFound": "This share link is invalid or has expired.",
+    "sessionError": "Could not load the shared comparison."
+  },
   "axes": {
     "heading": "Variable axes"
   },
@@ -103,7 +115,8 @@
     }
   },
   "about": {
-    "intro": "Compare loads two fonts entirely in your browser and lines them up side by side.",
+    "intro": "Compare loads two fonts in your browser and lines them up side by side. Normal comparison stays entirely on your device.",
+    "sharing": "<b>Share links are optional.</b> Fonts are uploaded only when you select Create share link. Anyone with the link can download and view both fonts. Shared sessions are automatically deleted after 10 days without access.",
     "body": "<b>Text</b> shows reading feel at one size and line height. <b>Waterfall</b> steps through a size ladder so you can spot where a face gets fragile at small sizes or heavy at large ones. <b>Characters</b> shows every glyph each font maps, so you can see coverage gaps at a glance. <b>Features</b> compares which OpenType layout features each font defines — ligatures, small caps, stylistic sets — and previews the ones both fonts share. <b>CSS</b> gives you a ready-to-use stylesheet for each font. <b>Overlay</b> superimposes one glyph from both fonts so you can see shape differences directly. <b>Data</b> compares metadata, metrics, variable axes, and language support, highlighting where the two fonts differ. <b>Pairing</b> compares x-height, weight, and width between the two fonts and explains what the difference will look like — it doesn't tell you if the pairing is good. Type your own text above to use it in Text and Waterfall."
   }
 }

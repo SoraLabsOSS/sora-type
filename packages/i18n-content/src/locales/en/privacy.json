@@ -3,9 +3,14 @@
     "title": "Privacy"
   },
   "eyebrow": "🛡️ PRIVATE BY DESIGN",
-  "heading": "Your fonts never leave your browser",
-  "body1": "Sora Type parses, previews, and inspects every font entirely on your device. Font files are read with fontkit and shaped with harfbuzzjs, both running client-side in WebAssembly — nothing is sent to a server for inspection, comparison, or preview.",
-  "body2": "This matters if you work with commercial or NDA-protected typefaces: you can drop them in and inspect metadata, glyph coverage, and language support without any file ever touching our infrastructure.",
+  "heading": "Your fonts stay local by default",
+  "body1": "Sora Type parses, previews, inspects, and compares fonts on your device. Font files are read with fontkit and shaped with harfbuzzjs, both running client-side in WebAssembly. Simply selecting or comparing a font does not upload it.",
+  "body2": "This matters if you work with commercial or NDA-protected typefaces: normal inspection and comparison do not send those files to our infrastructure.",
+  "shareException": {
+    "heading": "Optional share links",
+    "body1": "When you select \"Create share link\" in Compare, you explicitly ask Sora Type to upload and store both font files so anyone with the link can open the comparison. Knowledge of the link grants access to download and view those files; share links are not publicly listed.",
+    "body2": "Shared sessions are stored in Cloudflare D1 and R2 and are automatically deleted after 10 days without access. If you do not create a share link, Compare remains entirely local."
+  },
   "extension": {
     "heading": "Browser extension",
     "body1": "The Sora Type browser extension identifies fonts on web pages you visit. It runs entirely in your browser and does not send inspection data to our servers.",
@@ -14,7 +19,7 @@
     "body4": "If you choose \"Open in Sora Type\", the extension opens our web app in a new tab and may pass a font file URL as a query parameter — only when you click that link."
   },
   "pdfException": {
-    "heading": "The one exception: PDF export",
+    "heading": "PDF export",
     "body": "Generating a PDF report requires a Node.js PDF engine, which can't run in the browser. When you use \"Export PDF report\", your font file is sent once to our server to render the report, then discarded immediately after the response is returned — it is never logged, stored, or reused."
   }
 }

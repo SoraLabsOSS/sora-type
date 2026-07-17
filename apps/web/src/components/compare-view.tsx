@@ -34,9 +34,11 @@ import { CompareData } from "@/components/compare-data";
 import { CompareFeatures } from "@/components/compare-features";
 import { CompareOverlay } from "@/components/compare-overlay";
 import { ComparePairing } from "@/components/compare-pairing";
+import { CompareShareControls } from "@/components/compare-share-controls";
 import { CompareWaterfall } from "@/components/compare-waterfall";
 import { InspectorLocalFontPicker } from "@/components/font-inspector-local-font-picker";
 import { useLatestAsync } from "@/hooks/use-latest-async";
+import { useSharedCompareSession } from "@/hooks/use-shared-compare-session";
 
 type Slot = "left" | "right";
 type TabValue =
@@ -366,6 +368,8 @@ function ComparisonColumn({
 
 export default function CompareView() {
   const t = useTranslations("compare");
+  const tShare = useTranslations("compare.share");
+
   const [slots, setSlots] = useState<Record<Slot, FontSlotState>>({
     left: EMPTY_SLOT,
     right: EMPTY_SLOT,
@@ -463,6 +467,18 @@ export default function CompareView() {
     },
     [updateSlot]
   );
+
+  const {
+    failed: sharedLoadFailed,
+    isHydrating: isHydratingShared,
+    notFound: sharedNotFound,
+  } = useSharedCompareSession({
+    loadFontIntoSlot,
+    run,
+    setLeftSize,
+    setRightSize,
+    setSyncSliders,
+  });
 
   const handleFile = useCallback(
     async (slot: Slot, selected: File | File[] | null) => {
@@ -670,6 +686,12 @@ export default function CompareView() {
   const leftReady = isSlotReady(slots.left);
   const rightReady = isSlotReady(slots.right);
   const canPreview = leftReady || rightReady;
+  const canShare = Boolean(
+    slots.left.buffer &&
+      slots.right.buffer &&
+      slots.left.meta &&
+      slots.right.meta
+  );
 
   return (
     <Section className={COMPARE_SECTION_CLASS} padding={4}>
@@ -683,10 +705,23 @@ export default function CompareView() {
           </Text>
         </VStack>
 
+        {isHydratingShared ? (
+          <Text color="secondary" type="supporting">
+            {tShare("loadingSession")}
+          </Text>
+        ) : null}
+        {sharedLoadFailed ? (
+          <Text color="accent" type="supporting">
+            {sharedNotFound
+              ? tShare("sessionNotFound")
+              : tShare("sessionError")}
+          </Text>
+        ) : null}
+
         <Grid columns={COMPARE_GRID_COLUMNS} gap={4} style={COMPARE_GRID_STYLE}>
           <GridSpan columns={1}>
             <CompareFontInput
-              isLoading={isLoading("left")}
+              isLoading={isLoading("left") || isHydratingShared}
               localFontPickerKey={localFontPickerKeys.left}
               onChange={handleFile}
               onLocalFontClear={handleLocalFontClear}
@@ -697,7 +732,7 @@ export default function CompareView() {
           </GridSpan>
           <GridSpan columns={1}>
             <CompareFontInput
-              isLoading={isLoading("right")}
+              isLoading={isLoading("right") || isHydratingShared}
               localFontPickerKey={localFontPickerKeys.right}
               onChange={handleFile}
               onLocalFontClear={handleLocalFontClear}
@@ -707,6 +742,29 @@ export default function CompareView() {
             />
           </GridSpan>
         </Grid>
+
+        <CompareShareControls
+          canShare={canShare}
+          fontA={
+            slots.left.buffer && slots.left.meta
+              ? {
+                  buffer: slots.left.buffer,
+                  file: slots.left.file,
+                  fileName: slots.left.meta.fileName,
+                }
+              : null
+          }
+          fontB={
+            slots.right.buffer && slots.right.meta
+              ? {
+                  buffer: slots.right.buffer,
+                  file: slots.right.file,
+                  fileName: slots.right.meta.fileName,
+                }
+              : null
+          }
+          fontSize={leftSize}
+        />
 
         <Divider variant="subtle" />
 
@@ -883,6 +941,9 @@ function AboutTabPanel() {
       <VStack gap={3}>
         <Text as="p" type="body">
           {t("intro")}
+        </Text>
+        <Text as="p" color="secondary" type="body">
+          {t.rich("sharing", { b: (chunks) => <b>{chunks}</b> })}
         </Text>
         <Text as="p" type="body">
           {t.rich("body", { b: (chunks) => <b>{chunks}</b> })}

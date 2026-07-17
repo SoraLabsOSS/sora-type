@@ -15,6 +15,10 @@ export default defineWorkersConfig({
     setupFiles: ["./tests/apply-migrations.ts"],
     poolOptions: {
       workers: {
+        // R2 deletes trip Windows EBUSY when popping isolated storage
+        // frames (miniflare sqlite sidecars stay locked). Shared storage
+        // is fine here: singleWorker + unique session ids per test.
+        isolatedStorage: false,
         singleWorker: true,
         wrangler: {
           configPath: "../wrangler.jsonc",

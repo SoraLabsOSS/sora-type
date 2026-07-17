@@ -3,9 +3,14 @@
     "title": "Quyền riêng tư"
   },
   "eyebrow": "🛡️ RIÊNG TƯ THEO THIẾT KẾ",
-  "heading": "Font của bạn không bao giờ rời khỏi trình duyệt",
-  "body1": "Sora Type phân tích, xem trước và kiểm tra mọi font hoàn toàn trên thiết bị của bạn. File font được đọc bằng fontkit và tạo hình chữ bằng harfbuzzjs, cả hai đều chạy phía client bằng WebAssembly — không có gì được gửi lên server để kiểm tra, so sánh hay xem trước.",
-  "body2": "Điều này quan trọng nếu bạn làm việc với font thương mại hoặc font có NDA: bạn có thể thả vào và kiểm tra metadata, độ phủ glyph, hỗ trợ ngôn ngữ mà không có file nào chạm vào hạ tầng của chúng tôi.",
+  "heading": "Font của bạn mặc định được giữ trên thiết bị",
+  "body1": "Sora Type phân tích, xem trước, kiểm tra và so sánh font trên thiết bị của bạn. File font được đọc bằng fontkit và tạo hình chữ bằng harfbuzzjs, cả hai đều chạy phía client bằng WebAssembly. Chỉ chọn hoặc so sánh font sẽ không làm file bị upload.",
+  "body2": "Điều này quan trọng nếu bạn làm việc với font thương mại hoặc font có NDA: quá trình kiểm tra và so sánh thông thường không gửi các file đó lên hạ tầng của chúng tôi.",
+  "shareException": {
+    "heading": "Link chia sẻ tùy chọn",
+    "body1": "Khi chọn \"Tạo link chia sẻ\" trong trang So sánh, bạn chủ động yêu cầu Sora Type upload và lưu cả hai file font để bất kỳ ai có link đều có thể mở bản so sánh. Có link đồng nghĩa với quyền tải và xem các file này; link chia sẻ không được liệt kê công khai.",
+    "body2": "Session chia sẻ được lưu trong Cloudflare D1 và R2, sau đó tự động bị xóa nếu không được truy cập trong 10 ngày. Nếu bạn không tạo link chia sẻ, trang So sánh vẫn hoạt động hoàn toàn trên thiết bị."
+  },
   "extension": {
     "heading": "Tiện ích trình duyệt",
     "body1": "Tiện ích Sora Type nhận diện font trên các trang web bạn đang xem. Mọi thứ chạy trong trình duyệt và không gửi dữ liệu kiểm tra font lên server của chúng tôi.",
@@ -14,7 +19,7 @@
     "body4": "Nếu bạn chọn \"Mở trong Sora Type\", tiện ích mở web app trong tab mới và có thể truyền URL file font qua tham số truy vấn — chỉ khi bạn bấm liên kết đó."
   },
   "pdfException": {
-    "heading": "Ngoại lệ duy nhất: xuất PDF",
+    "heading": "Xuất PDF",
     "body": "Tạo báo cáo PDF cần một PDF engine Node.js, không thể chạy trong trình duyệt. Khi bạn dùng \"Export PDF report\", file font của bạn được gửi một lần lên server để render báo cáo, sau đó bị xóa ngay sau khi trả kết quả — không bao giờ được ghi log, lưu trữ hay tái sử dụng."
   }
 }

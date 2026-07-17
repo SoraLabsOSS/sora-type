@@ -20,6 +20,18 @@
     "placeholderSecond": "Thả font khác vào đây, hoặc chọn file"
   },
   "emptyPanel": "Thả font vào phía trên để so sánh cạnh nhau.",
+  "share": {
+    "button": "Tạo link chia sẻ",
+    "sharing": "Đang tải lên…",
+    "copied": "Đã sao chép link",
+    "copyManual": "Sao chép link này: {url}",
+    "error": "Không tạo được link chia sẻ",
+    "hint": "Tùy chọn: tải hai font lên để tạo bản so sánh riêng tư qua link. Dùng bình thường không upload; link không được truy cập sẽ bị xóa sau 10 ngày.",
+    "disabledHint": "Cần tải cả hai font trước",
+    "loadingSession": "Đang tải bản so sánh đã chia sẻ…",
+    "sessionNotFound": "Link chia sẻ không hợp lệ hoặc đã hết hạn.",
+    "sessionError": "Không tải được bản so sánh đã chia sẻ."
+  },
   "axes": {
     "heading": "Trục biến thiên"
   },
@@ -103,7 +115,8 @@
     }
   },
   "about": {
-    "intro": "So sánh tải hai font hoàn toàn trong trình duyệt và xếp chúng cạnh nhau.",
+    "intro": "So sánh tải hai font trong trình duyệt và xếp chúng cạnh nhau. Khi dùng bình thường, toàn bộ quá trình chỉ diễn ra trên thiết bị của bạn.",
+    "sharing": "<b>Link chia sẻ là tùy chọn.</b> Font chỉ được upload khi bạn chọn Tạo link chia sẻ. Bất kỳ ai có link đều có thể tải và xem cả hai font. Session chia sẻ tự động bị xóa sau 10 ngày không được truy cập.",
     "body": "<b>Văn bản</b> cho cảm nhận đọc ở một cỡ chữ và line-height. <b>Waterfall</b> đi qua thang cỡ chữ để bạn thấy chỗ nào font trở nên mảnh ở cỡ nhỏ hay đậm ở cỡ lớn. <b>Ký tự</b> hiển thị mọi glyph mà mỗi font ánh xạ, để bạn thấy ngay khoảng trống độ phủ. <b>Tính năng</b> so sánh các tính năng layout OpenType mà mỗi font định nghĩa — ligature, small caps, stylistic set — và xem trước những tính năng cả hai font cùng có. <b>CSS</b> cho bạn stylesheet dùng ngay cho mỗi font. <b>Lớp phủ</b> chồng một glyph từ cả hai font để bạn thấy trực tiếp khác biệt hình dáng. <b>Dữ liệu</b> so sánh metadata, chỉ số, trục biến thiên và hỗ trợ ngôn ngữ, làm nổi bật chỗ hai font khác nhau. <b>Ghép cặp</b> so sánh x-height, độ đậm và độ rộng giữa hai font và giải thích sự khác biệt sẽ trông như thế nào — không nói cho bạn biết cặp font này có hợp hay không. Gõ văn bản của riêng bạn ở trên để dùng trong tab Văn bản và Waterfall."
   }
 }

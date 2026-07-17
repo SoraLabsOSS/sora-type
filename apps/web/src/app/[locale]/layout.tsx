@@ -9,6 +9,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { DeferredAnalytics } from "@/components/analytics-deferred";
 import { AppLinkProvider } from "@/components/app-link-provider";
 import { AppShellLayout } from "@/components/app-shell-layout";
+import { SwrProvider } from "@/components/swr-provider";
 import { MatchaThemeProvider } from "@/components/theme/theme-provider";
 import { routing } from "@/i18n/routing";
 import {
@@ -106,7 +107,9 @@ export default async function RootLayout({
         <NextIntlClientProvider>
           <AppLinkProvider>
             <MatchaThemeProvider>
-              <AppShellLayout>{children}</AppShellLayout>
+              <SwrProvider>
+                <AppShellLayout>{children}</AppShellLayout>
+              </SwrProvider>
             </MatchaThemeProvider>
           </AppLinkProvider>
           <DeferredAnalytics />

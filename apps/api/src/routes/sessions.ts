@@ -4,11 +4,14 @@ import { Hono } from "hono";
 import { createDb } from "../db/client";
 import { sessions } from "../db/schema";
 import { generateSessionId } from "../lib/id";
+import type { AppContext } from "../types";
 
 const MAX_FONT_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FONT_SIZE_PX = 500;
 const UPLOAD_RATE_LIMIT = 15;
 const UPLOAD_RATE_LIMIT_WINDOW = "60 s" as const;
+const DOWNLOAD_RATE_LIMIT = 60;
+const DOWNLOAD_RATE_LIMIT_WINDOW = "60 s" as const;
 
 const rateLimitersByCredentials = new Map<
   string,
@@ -38,23 +41,41 @@ function getClientIp(request: Request): string {
   );
 }
 
+async function checkRouteRateLimit(
+  c: AppContext,
+  key: string,
+  limit: number,
+  window: `${number} s`
+) {
+  const { checkRateLimit } = getRateLimiter(c.env);
+  const rateLimit = await checkRateLimit(`${key}:${getClientIp(c.req.raw)}`, {
+    limit,
+    window,
+  });
+  if (rateLimit.success) {
+    return null;
+  }
+  const retryAfterSeconds = Math.max(
+    0,
+    Math.ceil((rateLimit.reset - Date.now()) / 1000)
+  );
+  return c.json(
+    { error: "Too many requests" },
+    { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+  );
+}
+
 export const sessionsRouter = new Hono<{ Bindings: Env }>();
 
 sessionsRouter.post("/", async (c) => {
-  const { checkRateLimit } = getRateLimiter(c.env);
-  const rateLimit = await checkRateLimit(`upload:${getClientIp(c.req.raw)}`, {
-    limit: UPLOAD_RATE_LIMIT,
-    window: UPLOAD_RATE_LIMIT_WINDOW,
-  });
-  if (!rateLimit.success) {
-    const retryAfterSeconds = Math.max(
-      0,
-      Math.ceil((rateLimit.reset - Date.now()) / 1000)
-    );
-    return c.json(
-      { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
-    );
+  const limited = await checkRouteRateLimit(
+    c,
+    "upload",
+    UPLOAD_RATE_LIMIT,
+    UPLOAD_RATE_LIMIT_WINDOW
+  );
+  if (limited) {
+    return limited;
   }
 
   let formData: FormData;
@@ -125,12 +146,14 @@ sessionsRouter.post("/", async (c) => {
   }
 
   try {
+    // Never trust the browser-supplied MIME type — it is echoed on download
+    // and would let an attacker host HTML/SVG as a "font". Store a fixed type.
     await Promise.all([
       c.env.R2.put(fontAKey, fontA, {
-        httpMetadata: { contentType: fontA.type },
+        httpMetadata: { contentType: "application/octet-stream" },
       }),
       c.env.R2.put(fontBKey, fontB, {
-        httpMetadata: { contentType: fontB.type },
+        httpMetadata: { contentType: "application/octet-stream" },
       }),
     ]);
   } catch {
@@ -158,3 +181,50 @@ sessionsRouter.get("/:id", async (c) => {
 
   return c.json(row);
 });
+
+async function serveSessionFont(c: AppContext, slot: "a" | "b") {
+  const limited = await checkRouteRateLimit(
+    c,
+    "download",
+    DOWNLOAD_RATE_LIMIT,
+    DOWNLOAD_RATE_LIMIT_WINDOW
+  );
+  if (limited) {
+    return limited;
+  }
+
+  const id = c.req.param("id");
+  const db = createDb(c.env.DB);
+
+  const [row] = await db
+    .update(sessions)
+    .set({ lastAccessedAt: new Date() })
+    .where(eq(sessions.id, id))
+    .returning();
+
+  if (!row) {
+    return c.json({ error: "Session not found" }, 404);
+  }
+
+  const key = slot === "a" ? row.fontAKey : row.fontBKey;
+  const object = await c.env.R2.get(key);
+  if (!object) {
+    return c.json({ error: "Font file not found" }, 404);
+  }
+
+  const headers = new Headers();
+  // Fixed type + nosniff + attachment: never reflect client Content-Type
+  // (upload path already stores octet-stream; this also covers legacy objects).
+  headers.set("Content-Type", "application/octet-stream");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Content-Disposition", `attachment; filename="font-${slot}.bin"`);
+  headers.set("Cache-Control", "private, max-age=3600");
+  if (object.size != null) {
+    headers.set("Content-Length", String(object.size));
+  }
+
+  return c.body(object.body, { headers });
+}
+
+sessionsRouter.get("/:id/a", (c) => serveSessionFont(c, "a"));
+sessionsRouter.get("/:id/b", (c) => serveSessionFont(c, "b"));

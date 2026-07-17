@@ -60,7 +60,9 @@ describe("Sessions API Integration Tests", () => {
 
       const objectA = await env.R2.get(body.fontAKey);
       expect(objectA).not.toBeNull();
-      expect(objectA?.httpMetadata?.contentType).toBe("font/ttf");
+      expect(objectA?.httpMetadata?.contentType).toBe(
+        "application/octet-stream"
+      );
       expect(new Uint8Array(await objectA?.arrayBuffer())).toEqual(
         new Uint8Array([1, 2, 3])
       );
@@ -183,6 +185,80 @@ describe("Sessions API Integration Tests", () => {
     it("404s for an unknown id", async () => {
       const response = await SELF.fetch(
         "http://local.test/sessions/doesnotexist"
+      );
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("GET /sessions/:id/a and /b", () => {
+    it("returns font bytes with safe download headers", async () => {
+      const created = await createSession(undefined, {
+        "cf-connecting-ip": "198.51.100.10",
+      });
+      const { id } = await created.json<SessionResponse>();
+
+      const responseA = await SELF.fetch(`http://local.test/sessions/${id}/a`);
+      expect(responseA.status).toBe(200);
+      expect(responseA.headers.get("Content-Type")).toBe(
+        "application/octet-stream"
+      );
+      expect(responseA.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(responseA.headers.get("Content-Disposition")).toBe(
+        'attachment; filename="font-a.bin"'
+      );
+      expect(responseA.headers.get("Cache-Control")).toBe(
+        "private, max-age=3600"
+      );
+      expect(new Uint8Array(await responseA.arrayBuffer())).toEqual(
+        new Uint8Array([1, 2, 3])
+      );
+
+      const responseB = await SELF.fetch(`http://local.test/sessions/${id}/b`);
+      expect(responseB.status).toBe(200);
+      expect(responseB.headers.get("Content-Disposition")).toBe(
+        'attachment; filename="font-b.bin"'
+      );
+      expect(new Uint8Array(await responseB.arrayBuffer())).toEqual(
+        new Uint8Array([4, 5, 6])
+      );
+    });
+
+    it("does not reflect a malicious client Content-Type", async () => {
+      const created = await createSession(
+        {
+          fontA: new File([new Uint8Array([9, 9, 9])], "evil.html", {
+            type: "text/html",
+          }),
+          fontB: new File([new Uint8Array([8, 8, 8])], "evil.svg", {
+            type: "image/svg+xml",
+          }),
+        },
+        { "cf-connecting-ip": "198.51.100.11" }
+      );
+      const { id, fontAKey } = await created.json<SessionResponse>();
+      expect(created.status).toBe(201);
+
+      const stored = await env.R2.get(fontAKey);
+      expect(stored?.httpMetadata?.contentType).toBe(
+        "application/octet-stream"
+      );
+
+      const response = await SELF.fetch(`http://local.test/sessions/${id}/a`);
+      expect(response.headers.get("Content-Type")).toBe(
+        "application/octet-stream"
+      );
+      expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(response.headers.get("Content-Disposition")).toContain(
+        "attachment"
+      );
+      expect(new Uint8Array(await response.arrayBuffer())).toEqual(
+        new Uint8Array([9, 9, 9])
+      );
+    });
+
+    it("404s for an unknown id", async () => {
+      const response = await SELF.fetch(
+        "http://local.test/sessions/doesnotexist/a"
       );
       expect(response.status).toBe(404);
     });

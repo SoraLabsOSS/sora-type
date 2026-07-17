@@ -35,6 +35,18 @@ export default async function PrivacyPage() {
 
           <VStack gap={1}>
             <Heading className="font-sans" level={3}>
+              {t("shareException.heading")}
+            </Heading>
+            <Text color="secondary" type="body">
+              {t("shareException.body1")}
+            </Text>
+            <Text color="secondary" type="body">
+              {t("shareException.body2")}
+            </Text>
+          </VStack>
+
+          <VStack gap={1}>
+            <Heading className="font-sans" level={3}>
               {t("extension.heading")}
             </Heading>
             <Text color="secondary" type="body">
