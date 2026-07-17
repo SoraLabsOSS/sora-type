@@ -1,0 +1,36 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "env": [
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_DATABASE_ID",
+        "CLOUDFLARE_D1_TOKEN",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN"
+      ]
+    },
+    "test": {
+      "env": [
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_DATABASE_ID",
+        "CLOUDFLARE_D1_TOKEN"
+      ]
+    },
+    "predeploy": {
+      "cache": false,
+      "env": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_D1_TOKEN"]
+    },
+    "deploy": {
+      "cache": false,
+      "env": [
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_DATABASE_ID",
+        "CLOUDFLARE_D1_TOKEN",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN"
+      ]
+    }
+  }
+}

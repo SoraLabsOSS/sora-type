@@ -1,7 +1,12 @@
 import { buildFontReport, exportReportAsPdf } from "@sora-type/font-engine";
+import { createRateLimit } from "@sora-type/rate-limit";
 import { create as createFont } from "fontkit";
 import { NextResponse } from "next/server";
-import { checkRateLimit } from "@/lib/ratelimit";
+
+const { checkRateLimit } = createRateLimit({
+  url: process.env.UPSTASH_REDIS_REST_URL ?? "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
+});
 
 // pdfkit generates via Node streams/buffers and has no zero-config browser
 // build (unlike fontkit/harfbuzzjs) — this is the one piece of the engine

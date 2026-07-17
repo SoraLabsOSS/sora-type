@@ -2,8 +2,10 @@
   "name": "sora-type-api",
   "description": "Sora Type backend API (Hono + D1 + Drizzle).",
   "dependencies": {
+    "@sora-type/rate-limit": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "hono": "4.11.1"
+    "hono": "4.11.1",
+    "nanoid": "^6.0.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.11.1",

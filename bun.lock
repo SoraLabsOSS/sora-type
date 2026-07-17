@@ -14,8 +14,10 @@
     "apps/api": {
       "name": "sora-type-api",
       "dependencies": {
+        "@sora-type/rate-limit": "workspace:*",
         "drizzle-orm": "^0.45.2",
         "hono": "4.11.1",
+        "nanoid": "^6.0.0",
       },
       "devDependencies": {
         "@cloudflare/vitest-pool-workers": "0.11.1",
@@ -73,8 +75,7 @@
         "@base-ui/react": "^1.6.0",
         "@sora-type/font-engine": "workspace:*",
         "@sora-type/i18n-content": "workspace:*",
-        "@upstash/ratelimit": "^2.0.8",
-        "@upstash/redis": "^1.38.0",
+        "@sora-type/rate-limit": "workspace:*",
         "@vercel/analytics": "^2.0.1",
         "@vercel/speed-insights": "^2.0.0",
         "class-variance-authority": "^0.7.1",
@@ -121,6 +122,18 @@
     "packages/i18n-content": {
       "name": "@sora-type/i18n-content",
       "version": "0.1.0",
+      "devDependencies": {
+        "@types/node": "^20",
+        "typescript": "^6.0.0",
+      },
+    },
+    "packages/rate-limit": {
+      "name": "@sora-type/rate-limit",
+      "version": "0.1.0",
+      "dependencies": {
+        "@upstash/ratelimit": "^2.0.8",
+        "@upstash/redis": "^1.38.0",
+      },
       "devDependencies": {
         "@types/node": "^20",
         "typescript": "^6.0.0",
@@ -701,6 +714,8 @@
     "@sora-type/font-engine": ["@sora-type/font-engine@workspace:packages/font-engine"],
 
     "@sora-type/i18n-content": ["@sora-type/i18n-content@workspace:packages/i18n-content"],
+
+    "@sora-type/rate-limit": ["@sora-type/rate-limit@workspace:packages/rate-limit"],
 
     "@speed-highlight/core": ["@speed-highlight/core@1.2.17", "", {}, "sha512-Z92FwKpCtfaW1V0jTU/fh3QzYEZN8wDwrzRIBoADCJfn4mJCNcJN/XegifX7BDrQ8/h9Xh/JnbyMchL0FqXrkg=="],
 
@@ -1564,7 +1579,7 @@
 
     "nano-spawn": ["nano-spawn@2.1.0", "", {}, "sha512-yTW+2okrElHiH4fsiz/+/zc0EDo9BDDoC3iKk8dpv1GeRc9nUWzUZHx6TofMWErchhUQR8hY9/Eu1Uja9x1nqA=="],
 
-    "nanoid": ["nanoid@3.3.15", "", { "bin": "bin/nanoid.cjs" }, "sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA=="],
+    "nanoid": ["nanoid@6.0.0", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-mkUH+rPkwU2qPadJ0oJZOjeZ5Mxn8Q1UhevwkTRWNuUZzyia3h4rhzK39hxaHTk0o2OxB8W2SQ6A8k23ZDi1pQ=="],
 
     "nanospinner": ["nanospinner@1.2.2", "", { "dependencies": { "picocolors": "^1.1.1" } }, "sha512-Zt/AmG6qRU3e+WnzGGLuMCEAO/dAu45stNbHY223tUxldaDAeE+FxSPsd9Q+j+paejmm0ZbrNVs5Sraqy3dRxA=="],
 
@@ -2226,6 +2241,8 @@
 
     "playwright/fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
 
+    "postcss/nanoid": ["nanoid@3.3.15", "", { "bin": "bin/nanoid.cjs" }, "sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA=="],
+
     "prompts/kleur": ["kleur@3.0.3", "", {}, "sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w=="],
 
     "publish-browser-extension/cac": ["cac@6.7.14", "", {}, "sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ=="],
@@ -2529,6 +2546,8 @@
     "mlly/pkg-types/confbox": ["confbox@0.1.8", "", {}, "sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w=="],
 
     "multimatch/minimatch/brace-expansion": ["brace-expansion@1.1.16", "", { "dependencies": { "balanced-match": "^1.0.0", "concat-map": "0.0.1" } }, "sha512-IDw48K2/2kRkg9LdJxurvq3lV3aBgq0REY89duEqFRthjlPdXHKMj7EnQOXVckxzgisinf3nHfrcE2FufFLXMw=="],
+
+    "next/postcss/nanoid": ["nanoid@3.3.15", "", { "bin": "bin/nanoid.cjs" }, "sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA=="],
 
     "sora-type-api/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
 
