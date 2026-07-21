@@ -2,7 +2,7 @@
 
 A font inspector that runs entirely in your browser. Drop in an OTF, TTF, WOFF, or WOFF2 file and see its metadata, glyph coverage, language support, and OpenType layout features — or load two fonts side by side to compare them. Everything runs client-side in WebAssembly (fontkit + harfbuzzjs); your font files never leave your device.
 
-**Live:** [type.soralabs.io.vn](https://type.soralabs.io.vn) · **Extension:** on-page font picker, see [`apps/extension`](apps/extension) (pending store review — load unpacked to try it now)
+**Live:** [type.soralabs.io.vn](https://type.soralabs.io.vn) · **Extension:** on-page font picker, on the [Microsoft Edge Add-ons store](https://microsoftedge.microsoft.com/addons/detail/ldcjechdgfjlkkcocjncfonnbefllobl) — see [`apps/extension`](apps/extension)
 
 ## Features
 
@@ -93,7 +93,7 @@ Copy `apps/web/.env.example` to `apps/web/.env` and fill in values from your [Up
 
 This only *updates* an existing Edge Add-ons listing — the first submission must be done once, manually, through [Partner Center](https://partner.microsoft.com/dashboard/microsoftedge/overview) to obtain a Product ID. The workflow needs three repo secrets: `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY`.
 
-The first submission has been made and is currently pending Microsoft's review (no store link yet). Until it's approved, use `bun run build` / `bun run build:firefox` in `apps/extension` and load `.output/*` unpacked — see [`apps/extension/README.md`](apps/extension/README.md).
+The extension is live on the [Microsoft Edge Add-ons store](https://microsoftedge.microsoft.com/addons/detail/ldcjechdgfjlkkcocjncfonnbefllobl). No Chrome Web Store or Firefox Add-ons listing yet — in the meantime, use `bun run build` / `bun run build:firefox` in `apps/extension` and load `.output/*` unpacked — see [`apps/extension/README.md`](apps/extension/README.md).
 
 ## Credits
 

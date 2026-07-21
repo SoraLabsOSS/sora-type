@@ -6,7 +6,7 @@ Companion to the [Sora Type](https://type.soralabs.io.vn) web app — shares the
 
 ## Status
 
-Submitted to the Microsoft Edge Add-ons store; the listing is pending Microsoft's review. No Chrome Web Store listing yet. In the meantime, load it unpacked (see below) to try it now.
+Live on the [Microsoft Edge Add-ons store](https://microsoftedge.microsoft.com/addons/detail/ldcjechdgfjlkkcocjncfonnbefllobl). No Chrome Web Store listing yet — in the meantime, load it unpacked (see below) to try it there.
 
 ## Features
 
